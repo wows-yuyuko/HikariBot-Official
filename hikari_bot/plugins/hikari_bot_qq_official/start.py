@@ -1,13 +1,15 @@
 import os
 import shutil
 import traceback
+from typing import List
 
 import nonebot
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
-from hikari_core import callback_hikari, init_hikari
+from hikari_core import callback_hikari, init_hikari, init_hikari_no_output
 from hikari_core.cache_utils import get_cache_file
 from hikari_core.config import set_hikari_config
+from hikari_core.model import Func
 from hikari_core.moudle.wws_real_game import (
     add_listen_list,
     delete_listen_list,
@@ -52,28 +54,24 @@ set_hikari_config(
     game_path=str(get_cache_file())
 )
 
+ignore_list = [add_listen_list, delete_listen_list, get_diff_ship, get_listen_list, ]
+
 image_path = get_cache_file() / 'image_cache'
 
+
 @wws.handle()
-async def main(ev: MessageEvent, matchmsg: Message = CommandArg()):  # noqa: B008, PLR0915
+async def main(ev: MessageEvent, message: Message = CommandArg()):  # noqa: B008, PLR0915
     try:
         if not check_rule(ev):
             await wws.finish('该功能已禁用')
         server_type = driver.config.platform
         qq_id = ev.get_user_id()
         group_id = None
-        hikari = await init_hikari(
+        hikari = await init_hikari_no_output(
             platform=server_type,
             PlatformId=str(qq_id),
-            command_text=str(matchmsg),
-            GroupId=group_id,
-            Ignore_List=[
-                add_listen_list,
-                delete_listen_list,
-                get_diff_ship,
-                get_listen_list,
-            ],
-        )
+            command_text=str(message),
+            GroupId=group_id, Ignore_List=ignore_list)
         if hikari.Status == 'success':
             if isinstance(hikari.Output.Data, bytes):
                 if isinstance(ev, GuildMessageEvent):
@@ -85,21 +83,26 @@ async def main(ev: MessageEvent, matchmsg: Message = CommandArg()):  # noqa: B00
             elif isinstance(hikari.Output.Data, str):
                 await wws.send(hikari.Output.Data)
         elif hikari.Status == 'wait':
-            logger.success('渲染模板')
-            if hikari.Output.Template in 'select-clan.html':
+            if hikari.Output.Template in 'select-ship-v3.html':
                 data_list = []
                 index = 1
-                for club in hikari.Input.Select_Data:
-                    data_list.append(select_template.SelectClan(index=index, tag=club.tag, name=club.name))
+                for club in hikari.Input.Select_Data[:10]:
+                    data_list.append(select_template.SelectClan(index=index, tag=club.get('tag', ''), name=club.get('name', ''), ))
+                    index += 1
+                    await wws.send(select_template.get_clan_markdown(data_list))
+            elif hikari.Output.Template in 'select-clan.html':
+                data_list = []
+                index = 1
+                for club in hikari.Input.Select_Data[:10]:
+                    data_list.append(select_template.SelectClan(index=index, tag=club.get('tag', ''), name=club.get('name', ''), ))
                     index += 1
                 await wws.send(select_template.get_clan_markdown(data_list))
-            # if isinstance(ev, GuildMessageEvent):
-            #     await wws.send(MessageSegment.file_image(hikari.Output.Data))
-            # else:
-            #     url = await upload_image(hikari.Output.Data)
-            #     logger.success(url)
-            #     await wws.send(MessageSegment.image(url))
-
+            elif isinstance(ev, GuildMessageEvent):
+                await wws.send(MessageSegment.file_image(hikari.Output.Data))
+            else:
+                url = await upload_image(hikari.Output.Data)
+                logger.success(url)
+                await wws.send(MessageSegment.image(url))
             hikari = await wait_to_select(hikari)
             if hikari.Status == 'error':
                 await wws.send(str(hikari.Output.Data))
@@ -158,6 +161,7 @@ def web_run():
         if not os.path.exists(image_path):
             os.mkdir(image_path)
         logger.success(f'本地文件服务器启动成功 path={image_path}，请确认是否放行对应端口，如果没有公网ip请将配置项UPLOAD_IMAGE改为smms或oss')
+
         @app.get('/images/{filename}')
         async def get_file(filename):
             return FileResponse(image_path / filename)
@@ -188,5 +192,3 @@ async def delete_image(ev: MessageEvent):
     except Exception:
         logger.error(traceback.format_exc())
         await delete_image_cache.send('清除缓存失败')
-
-
