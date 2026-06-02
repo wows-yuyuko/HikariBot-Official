@@ -6,10 +6,10 @@ from typing import List
 import nonebot
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
-from hikari_core import callback_hikari, init_hikari, init_hikari_no_output
+from hikari_core import callback_hikari, init_hikari, init_hikari_no_output, output_hikari
 from hikari_core.cache_utils import get_cache_file
 from hikari_core.config import set_hikari_config
-from hikari_core.model import Func
+from hikari_core.model import Func, Hikari_Model
 from hikari_core.moudle.wws_real_game import (
     add_listen_list,
     delete_listen_list,
@@ -59,6 +59,38 @@ ignore_list = [add_listen_list, delete_listen_list, get_diff_ship, get_listen_li
 image_path = get_cache_file() / 'image_cache'
 
 
+async def _send_output(ev: MessageEvent, sender, hikari: Hikari_Model):
+    hikari = await output_hikari(hikari)
+    data = hikari.Output.Data
+    """发送 Hikari 输出数据，自动处理 bytes（图片）和 str（文本）。"""
+    if isinstance(data, bytes):
+        if isinstance(ev, GuildMessageEvent):
+            await sender.send(MessageSegment.file_image(data))
+        else:
+            url = await upload_image(data)
+            logger.success(url)
+            await sender.send(MessageSegment.image(url))
+    elif isinstance(data, str):
+        await sender.send(data)
+
+
+def _build_select_list(type: int, select_data):
+    """从 Select_Data 构建 SelectClan 列表。"""
+    data_list = []
+    if type == 1:
+        for index, club in enumerate(select_data[:10], start=1):
+            data_list.append(
+                select_template.SelectShip(index=index, level_str=club.get('levelStr') or '0', ship_type_url=club.get('shipTypeImage') or '',ship_type=club.get('shipType') or 'Battleship',
+                                           name_cn=club.get('nameCn') or '', name_cn360=club.get('nameCn360') or '', name_en=club.get('nameEnglish') or '')
+            )
+    elif type == 2:
+        for index, club in enumerate(select_data[:10], start=1):
+            data_list.append(
+                select_template.SelectClan(index=index, tag=club.get('tag') or '', name=club.get('name') or '', ))
+
+    return data_list
+
+
 @wws.handle()
 async def main(ev: MessageEvent, message: Message = CommandArg()):  # noqa: B008, PLR0915
     try:
@@ -71,65 +103,35 @@ async def main(ev: MessageEvent, message: Message = CommandArg()):  # noqa: B008
             platform=server_type,
             PlatformId=str(qq_id),
             command_text=str(message),
-            GroupId=group_id, Ignore_List=ignore_list)
+            GroupId=group_id,
+            Ignore_List=ignore_list,
+        )
+        # ========== 状态判断 ==========
         if hikari.Status == 'success':
-            if isinstance(hikari.Output.Data, bytes):
-                if isinstance(ev, GuildMessageEvent):
-                    await wws.send(MessageSegment.file_image(hikari.Output.Data))
-                else:
-                    url = await upload_image(hikari.Output.Data)
-                    logger.success(url)
-                    await wws.send(MessageSegment.image(url))
-            elif isinstance(hikari.Output.Data, str):
-                await wws.send(hikari.Output.Data)
+            await _send_output(ev, wws, hikari)
         elif hikari.Status == 'wait':
-            if hikari.Output.Template in 'select-ship-v3.html':
-                data_list = []
-                index = 1
-                for club in hikari.Input.Select_Data[:10]:
-                    data_list.append(select_template.SelectClan(index=index, tag=club.get('tag', ''), name=club.get('name', ''), ))
-                    index += 1
-                    await wws.send(select_template.get_clan_markdown(data_list))
-            elif hikari.Output.Template in 'select-clan.html':
-                data_list = []
-                index = 1
-                for club in hikari.Input.Select_Data[:10]:
-                    data_list.append(select_template.SelectClan(index=index, tag=club.get('tag', ''), name=club.get('name', ''), ))
-                    index += 1
-                await wws.send(select_template.get_clan_markdown(data_list))
-            elif isinstance(ev, GuildMessageEvent):
-                await wws.send(MessageSegment.file_image(hikari.Output.Data))
+            # 展示选择界面
+            if hikari.Output.Template in ('select-ship-v3.html', 'select-clan.html'):
+                if hikari.Output.Template == 'select-ship-v3.html':
+                    await wws.send(select_template.get_ship_markdown(_build_select_list(1, hikari.Input.Select_Data)))
+                else:
+                    await wws.send(select_template.get_clan_markdown(_build_select_list(2, hikari.Input.Select_Data)))
             else:
-                url = await upload_image(hikari.Output.Data)
-                logger.success(url)
-                await wws.send(MessageSegment.image(url))
+                await _send_output(ev, wws, hikari)
             hikari = await wait_to_select(hikari)
             if hikari.Status == 'error':
                 await wws.send(str(hikari.Output.Data))
                 return
-            hikari = await callback_hikari(hikari)
-            if isinstance(hikari.Output.Data, bytes):
-                if isinstance(ev, GuildMessageEvent):
-                    await wws.send(MessageSegment.file_image(hikari.Output.Data))
-                else:
-                    url = await upload_image(hikari.Output.Data)
-                    logger.success(url)
-                    await wws.send(MessageSegment.image(url))
-            elif isinstance(hikari.Output.Data, str):
-                await wws.send(str(hikari.Output.Data))
+            hikari = await callback_hikari(hikari)  # callback_hikari 内部已调用 output_hikari
+            await _send_output(ev, wws, hikari)
         else:
             await wws.send(str(hikari.Output.Data))
-    except FinishedException:
-        return
     except ActionFailed as e:
         logger.error(traceback.format_exc())
         try:
             await wws.send(f'发不出图片，可能撞限速了QAQ，请在频道重新尝试\n{e}')
-            return True
         except Exception:
             logger.error(traceback.format_exc())
-            pass
-        return False
     except Exception:
         logger.error(traceback.format_exc())
         await wws.send('呜呜呜发生了错误，可能是网络问题，如果过段时间不能恢复请联系麻麻哦~')
