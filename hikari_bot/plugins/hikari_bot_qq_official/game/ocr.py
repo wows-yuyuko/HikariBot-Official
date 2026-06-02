@@ -5,11 +5,11 @@ from pathlib import Path
 
 import httpx
 import orjson
-from hikari_core.HttpClient_Pool import get_client_yuyuko
+from nonebot import get_driver
 from httpx import TimeoutException
 from nonebot.log import logger
-
-from ..data_source import config
+from hikari_core.HttpClient_Pool import get_client_yuyuko
+config = get_driver().config
 
 ocr_url = None
 dir_path = Path(__file__).parent.parent

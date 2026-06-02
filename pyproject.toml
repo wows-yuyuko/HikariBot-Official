@@ -1,50 +1,65 @@
-[tool.poetry]
+[project]
 name = "hikari-bot-official"
 version = "0.2.9"
 description = "Nonebot2 HikariBot For QQ-Official,支持战舰世界水表查询"
-authors = ["benx1n <shirakamikanade@gmail.com>"]
+authors = [
+    {name = "benx1n", email = "shirakamikanade@gmail.com"}
+]
 license = "MIT"
+license-files = ["LICENSE"]
 readme = "README.md"
-homepage = "https://github.com/benx1n/HikariBot-Official"
-repository = "https://github.com/benx1n/HikariBot-Official"
-keywords = ["nonebot", "nonebot2", "qqbot", "wows", "wws","bot","stats"]
-packages = [
-    { include = "hikari_bot_official", from = "./src/plugins/"}
+requires-python = ">=3.11,<3.13"
+keywords = ["nonebot", "nonebot2", "qqbot", "wows", "wws", "bot", "stats"]
+dependencies = [
+    "nonebot2[fastapi,websockets,httpx] >=2.5.0",
+    "nonebot-adapter-qq >=1.2.0",
+    "orjson >=3.8.11",
+    "oss2 >=2.18.3",
+    "httpx[http2] >=0.28.1",
+    "asyncio >=3.4.3",
+    "APScheduler >=3.10.1",
+    "jinja2 >=3.0.0",
+    "pydantic >=2.13.4",
+    "playwright >=1.40.0",
+    "aiofiles >=0.8.0",
+    "beautifulsoup4 >=4.12.2",
+    "loguru >=0.7.0",
+    "json_tools >=0.4.1",
+    "pytz >=2025.2",
+    "pillow >=9.5.0",
+    "nb-cli >=1.7.4"
 ]
 
-[tool.poetry.dependencies]
-python = "^3.8.0"
-nonebot2 = { version = "^2.1.0", extras = ["fastapi","websockets","httpx"] }
-nonebot-adapter-qq = "^1.2.0"
-nonebot-plugin-apscheduler = "^0.2.0"
-nonebot-plugin-reboot = "^0.1.3"
-httpx = { version = ">=0.24.0", extras = ["http2"] }
-Jinja2 = "^3.0.0"
-beautifulsoup4 = "^4.11.1"
-orjson = "^3.8.11"
-hikari-core = "^1.0.0"
-oss2 = "^2.18.3"
+[project.urls]
+homepage = "https://github.com/benx1n/HikariBot-Official"
+repository = "https://github.com/benx1n/HikariBot-Official"
 
-[tool.poetry.group.dev.dependencies]
-nb-cli = "^0.6.0"
-nonebot-plugin-gocqhttp = "^0.6.2"
-black = {version = "^23.1a1", allow-prereleases = true}
-isort = "^5.12.0"
+[tool.poetry]
+packages = [
+    { include = "hikari_bot_official", from = "hikari_bot/plugins"}
+]
 
 [tool.nonebot]
-#plugins = ["nonebot_plugin_apscheduler"]
-plugins = ["nonebot_plugin_apscheduler","hikari_bot_official"]
-#plugin_dirs = ["src/plugins"]
+plugin_dirs = ["hikari_bot/plugins"]
 
+[[tool.poetry.source]]
+name = "aliyun"
+url = "https://mirrors.aliyun.com/pypi/simple/"
+priority = "primary"
 [[tool.poetry.source]]
 name = "tsinghua"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple/"
-# default = true
+priority = "supplemental"
+[[tool.poetry.source]]
+name = "tencent"
+url = "https://mirrors.cloud.tencent.com/pypi/simple/"
+priority = "supplemental"
 
 [build-system]
-requires = ["poetry_core>=1.0.0"]
+requires = ["poetry-core>=2.4.0"]
 build-backend = "poetry.core.masonry.api"
 
+# 以下工具配置保持不变
 [tool.isort]
 profile = "black"
 
@@ -57,25 +72,10 @@ line-length = 150
 respect-gitignore = true
 ignore-init-module-imports = true
 select = [
-    'F',  # pyflakes
-    'E',  # pycodestyle errors
-    'W',  # pycodestyle warnings
-    'I',  # isort
-    'C',  # flake8-comprehensions
-    'B',  # flake8-bugbear
-    'Q',  # flake8-quotes
-    'PL',  # pylint
-    'RUF',  # Ruff-specific rules
+    'F', 'E', 'W', 'I', 'C', 'B', 'Q', 'PL', 'RUF'
 ]
 ignore = [
-    'E501',
-    "RUF001",
-    "RUF002",
-    "RUF003",
-    "PLR2004",
-    "C901",
-    "PLR0912",
-    "PLR0911",
-    "PLW0603"
+    'E501', 'RUF001', 'RUF002', 'RUF003', 'PLR2004',
+    'C901', 'PLR0912', 'PLR0911', 'PLW0603'
 ]
 flake8-quotes = {inline-quotes = 'single', multiline-quotes = 'double'}

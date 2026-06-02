@@ -151,3 +151,5 @@ src/plugins/hikari_bot_official/game/ocr_data.json
 src/plugins/hikari_bot_official/game/account_data
 src/plugins/hikari_bot_official/game/listen_config.json
 src/plugins/hikari_bot_official/image_cache
+pyproject.lock
+hikari-core/
