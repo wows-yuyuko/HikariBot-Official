@@ -32,7 +32,7 @@ from hikari_bot.plugins.hikari_bot_qq_official.game.ocr import get_Random_Ocr_Pi
 from hikari_bot.plugins.hikari_bot_qq_official.game.pupu import get_pupu_msg
 from hikari_bot.plugins.hikari_bot_qq_official.select_state import wait_to_select
 from hikari_bot.plugins.hikari_bot_qq_official.template import select_template
-from hikari_bot.plugins.hikari_bot_qq_official.utils import upload_image, check_rule
+from hikari_bot.plugins.hikari_bot_qq_official.utils import upload_image, check_rule,image_path
 
 bot_get_random_pic = on_command('wws 随机表情包', block=True, priority=5)
 delete_image_cache = on_command('wws 清除本地缓存', priority=5, block=True, permission=SUPERUSER)
@@ -55,8 +55,6 @@ set_hikari_config(
 )
 
 ignore_list = [add_listen_list, delete_listen_list, get_diff_ship, get_listen_list, ]
-
-image_path = get_cache_file() / 'image_cache'
 
 
 async def _send_output(ev: MessageEvent, sender, hikari: Hikari_Model):

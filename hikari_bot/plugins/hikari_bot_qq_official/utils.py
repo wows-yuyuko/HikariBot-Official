@@ -1,16 +1,20 @@
 import gzip
 import hashlib
 import io
+import os
 
 import httpx
 import orjson
 import oss2
+from hikari_core.cache_utils import get_cache_file
 from nonebot import get_driver
 from nonebot.adapters.qq import DirectMessageCreateEvent, GuildMessageEvent
 from nonebot.log import logger
 
 driver = get_driver()
 config = driver.config
+
+image_path = get_cache_file() / 'image_cache'
 
 
 def check_rule(ev):
@@ -70,12 +74,21 @@ async def upload_smms(bytes):
             return result['images']
 
 
+def upload_local(bytes):
+    md5 = byte2md5(bytes)
+    if not os.path.exists(image_path):
+        os.mkdir(image_path)
+    with open(image_path / f'{md5}.jpg', 'wb') as f:
+        f.write(bytes)
+    return f'{get_driver().config.upload_local_url}/images/{md5}.jpg'
+
+
 async def upload_image(bytes):
     if config.upload_image == 'oss':
         return upload_oss(bytes)
     elif config.upload_image == 'smms':
         return await upload_smms(bytes)
     elif config.upload_image == 'local':
-        return None
+        return upload_local(bytes)
     else:
         return None
