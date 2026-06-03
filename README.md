@@ -1,38 +1,6 @@
 <!-- markdownlint-disable MD033 MD041 -->
-<p align="center">
-  <a href="https://github.com/benx1n/HikariBot"><img src="https://s2.loli.net/2022/05/28/SFsER8m6TL7jwJ2.png" alt="Hikari " style="width:200px; height:200px" ></a>
-</p>
 
-<div align="center">
-
-# Hikari
-
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable-next-line MD036 -->
-战舰世界水表BOT
-<!-- prettier-ignore-end -->
-
-<p align="center">
-  <a href="https://pypi.python.org/pypi/hikari-bot">
-    <img src="https://img.shields.io/pypi/v/hikari-bot" alt="pypi">
-  </a>
-  <img src="https://img.shields.io/badge/python-3.8.0+-blue" alt="python">
-  <a href="http://hits.dwyl.com/benx1n/HikariBot">
-    <img src="https://hits.dwyl.com/benx1n/HikariBot.svg?style=flat-square" alt="hits">
-  </a>
-  <a href="https://github.com/benx1n/HikariBot/stargazers"><img src="https://img.shields.io/github/stars/benx1n/HikariBot" alt="GitHub stars"style="max-width: 100%;">
-  </a>
-  <br/>
-  <a href="https://jq.qq.com/?_wv=1027&k=S2WcTKi5">
-    <img src="https://img.shields.io/badge/QQ%E7%BE%A4-967546463-orange?style=flat-square" alt="QQ Chat Group">
-  </a>
-  <a href="https://qun.qq.com/qqweb/qunpro/share?_wv=3&_wwv=128&appChannel=share&inviteCode=1W4NX2S&from=181074&biz=ka#/pc">
-    <img src="https://img.shields.io/badge/QQ%E9%A2%91%E9%81%93-yuyuko助手-5492ff?style=flat-square" alt="QQ Channel">
-  </a>
-
-# 💘您不打算给可爱的Hikari点个Star吗QAQ
-</p>
-</div>
+# 内部机器人项目
 
 ## 简介
 
