@@ -16,7 +16,7 @@ from hikari_core.moudle.wws_real_game import (
     get_diff_ship,
     get_listen_list,
 )
-from nonebot import get_driver, on_command, on_message
+from nonebot import get_driver, on_command, on_message, Bot
 from nonebot.adapters.qq import (
     ActionFailed,
     GuildMessageEvent,
@@ -32,7 +32,7 @@ from hikari_bot.plugins.hikari_bot_qq_official.game.ocr import get_Random_Ocr_Pi
 from hikari_bot.plugins.hikari_bot_qq_official.game.pupu import get_pupu_msg
 from hikari_bot.plugins.hikari_bot_qq_official.select_state import wait_to_select
 from hikari_bot.plugins.hikari_bot_qq_official.template import select_template
-from hikari_bot.plugins.hikari_bot_qq_official.utils import upload_image, check_rule,image_path
+from hikari_bot.plugins.hikari_bot_qq_official.utils import upload_image, check_rule, image_path
 
 bot_get_random_pic = on_command('wws 随机表情包', block=True, priority=5)
 delete_image_cache = on_command('wws 清除本地缓存', priority=5, block=True, permission=SUPERUSER)
@@ -78,7 +78,7 @@ def _build_select_list(type: int, select_data):
     if type == 1:
         for index, club in enumerate(select_data[:10], start=1):
             data_list.append(
-                select_template.SelectShip(index=index, level_str=club.get('levelStr') or '0', ship_type_url=club.get('shipTypeImage') or '',ship_type=club.get('shipType') or 'Battleship',
+                select_template.SelectShip(index=index, level_str=club.get('levelStr') or '0', ship_type_url=club.get('shipTypeImage') or '', ship_type=club.get('shipType') or 'Battleship',
                                            name_cn=club.get('nameCn') or '', name_cn360=club.get('nameCn360') or '', name_en=club.get('nameEnglish') or '')
             )
     elif type == 2:
@@ -90,7 +90,7 @@ def _build_select_list(type: int, select_data):
 
 
 @wws.handle()
-async def main(ev: MessageEvent, message: Message = CommandArg()):  # noqa: B008, PLR0915
+async def main(ev: MessageEvent, bot: Bot, message: Message = CommandArg()):  # noqa: B008, PLR0915
     try:
         if not check_rule(ev):
             await wws.finish('该功能已禁用')
@@ -109,11 +109,14 @@ async def main(ev: MessageEvent, message: Message = CommandArg()):  # noqa: B008
             await _send_output(ev, wws, hikari)
         elif hikari.Status == 'wait':
             # 展示选择界面
-            if hikari.Output.Template in ('select-ship-v3.html', 'select-clan.html'):
-                if hikari.Output.Template == 'select-ship-v3.html':
-                    await wws.send(select_template.get_ship_markdown(_build_select_list(1, hikari.Input.Select_Data)))
+            if bot.self_id not in get_driver().config.bot_is_md_file_list:
+                if hikari.Output.Template in ('select-ship-v3.html', 'select-clan.html'):
+                    if hikari.Output.Template == 'select-ship-v3.html':
+                        await wws.send(select_template.get_ship_markdown(_build_select_list(1, hikari.Input.Select_Data)))
+                    else:
+                        await wws.send(select_template.get_clan_markdown(_build_select_list(2, hikari.Input.Select_Data)))
                 else:
-                    await wws.send(select_template.get_clan_markdown(_build_select_list(2, hikari.Input.Select_Data)))
+                    await _send_output(ev, wws, hikari)
             else:
                 await _send_output(ev, wws, hikari)
             hikari = await wait_to_select(hikari)
