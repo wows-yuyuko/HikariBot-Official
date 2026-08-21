@@ -1,7 +1,8 @@
 from nonebot.adapters.qq import MessageSegment
 from pydantic.v1 import BaseModel
 
-from hikari_core.data_source import shiptypes
+from hikari_core.core.constants import shiptypes
+
 
 class SelectShip(BaseModel):
     index: int = 1
@@ -11,6 +12,7 @@ class SelectShip(BaseModel):
     name_cn: str = ""
     name_cn360: str = ""
     name_en: str = ""
+
 
 class SelectClan(BaseModel):
     index: int = 1
@@ -34,6 +36,7 @@ def get_ship_markdown(data_list: list[SelectShip]) -> MessageSegment:
 ---
 """
     return MessageSegment.markdown(markdown_content)
+
 
 def get_clan_markdown(data_list: list[SelectClan]) -> MessageSegment:
     table_rows = "\n".join([

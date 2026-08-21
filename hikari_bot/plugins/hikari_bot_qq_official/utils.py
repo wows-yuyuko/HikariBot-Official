@@ -6,7 +6,7 @@ import os
 import httpx
 import orjson
 import oss2
-from hikari_core.cache_utils import get_cache_file
+from hikari_core import get_cache_file
 from nonebot import get_driver
 from nonebot.adapters.qq import DirectMessageCreateEvent, GuildMessageEvent
 from nonebot.log import logger
