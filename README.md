@@ -27,16 +27,11 @@ git submodule update --remote
 ```
 
 
-## Linux 部署
+## Linux 部署（Poetry 方案）
 
-> 以 Ubuntu / Debian 为例；CentOS 系可参考 `manage.sh install` 中的 yum 依赖列表。
+> 以 Ubuntu / Debian 为例；要求已安装 **Python 3.11**（项目要求 `>=3.11,<3.13`）。部署使用 [Poetry](https://python-poetry.org/) 构建**完全隔离**的项目虚拟环境（生成在项目内 `.venv`），不污染系统 Python。
 
-### 1. 环境要求
-
-- Python **3.11**（项目要求 `>=3.11,<3.13`，推荐 3.11）
-- Git、能够访问外网
-
-### 2. 克隆代码（带 hikari_core 子模块）
+### 1. 克隆代码（带 hikari_core 子模块）
 
 ```bash
 git clone --recurse-submodules https://github.com/wows-yuyuko/HikariBot-Official.git
@@ -44,38 +39,26 @@ cd HikariBot-Official
 # 若克隆时忘了带子模块，执行：git submodule update --init --recursive
 ```
 
-### 3. 安装系统依赖（含中文字体）
+### 2. 一键部署
 
 ```bash
-sudo apt update
-sudo apt install -y python3.11 python3.11-venv python3-pip git fonts-noto
+./deploy.sh
 ```
 
-### 4. 创建虚拟环境并安装项目依赖
+脚本自动完成：
+
+1. 检查 Python 版本（3.11 ~ 3.12）
+2. 初始化 `hikari_core` 子模块
+3. 安装 Poetry（若缺失，用**官方安装器**；不要用 apt 安装 Poetry，Debian 打包版默认关闭虚拟环境创建）
+4. 创建隔离环境 `.venv`，并按 `poetry.lock` **精确安装**依赖
+5. 安装 Playwright Chromium 及系统运行库、中文字体（需 sudo）
+6. 生成 `.env.prod`（若不存在）
+
+> 若 `poetry install` 报 `ensurepip` 相关错误，先执行 `sudo apt install -y python3.11-venv` 再重跑。
+
+### 3. 配置环境变量
 
 ```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -U pip
-pip install -e .                      # 按 pyproject.toml 安装全部依赖
-
-# 或使用 poetry（按 poetry.lock 精确安装）：
-# pip install poetry && poetry install
-```
-
-### 5. 安装 Playwright 浏览器及运行库
-
-```bash
-playwright install chromium
-sudo playwright install-deps chromium   # 自动安装浏览器系统运行库（Ubuntu/Debian）
-```
-
-> `install-deps` 不可用或非 Debian 系时，可手动安装 `manage.sh install` 中列出的 apt/yum 包。
-
-### 6. 配置环境变量
-
-```bash
-cp .env.prod-example .env.prod
 vi .env.prod
 ```
 
@@ -86,25 +69,51 @@ vi .env.prod
 - `SUPERUSERS`：你的 QQ 号
 - `HOST` / `PORT`：默认 `0.0.0.0:9999`，云服务器需在安全组放行对应端口
 
-### 7. 启动
+### 4. 启停管理
 
 ```bash
-python bot.py
+./service.sh start     # 启动（后台运行）
+./service.sh status    # 查看状态
+./service.sh restart   # 重启
+./service.sh stop      # 停止
 ```
 
-> 等价于 `nb run`；启动时会自动加载 `hikari_core` 子模块源码。需要后台常驻可加 `nohup python bot.py > bot.log 2>&1 &`，或自行配置 systemd 服务。
+- 进程后台运行，标准输出/错误日志写入 `logs/bot.log`（机器人自身日志在 `logs/info.log`）
+- 生产环境建议用 systemd 托管（可选）：
 
-### 8. 更新
+```ini
+# /etc/systemd/system/hikaribot.service
+[Unit]
+Description=HikariBot
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/path/to/HikariBot-Official
+ExecStart=/path/to/HikariBot-Official/.venv/bin/python bot.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now hikaribot
+```
+
+### 5. 更新
 
 ```bash
 git config submodule.recurse true   # 配置一次，之后 git pull 会顺带更新子模块
 git pull
 git submodule update --remote       # 手动将 hikari_core 更新到远端最新
+poetry install                      # 依赖有变动时按 poetry.lock 同步
+./service.sh restart                # 重启生效
 ```
 
-> `manage.sh` 提供 `./manage.sh install` / `./manage.sh start` / `./manage.sh update` 快捷命令（基于 `nb run`），但其 `update` **不会**更新子模块，请按上面手动方式同步 hikari_core。
+> 旧版 `manage.sh`（`install` / `start` / `update`，基于 `nb run`）为历史脚本，其 `update` **不会**更新子模块，建议改用 `deploy.sh` / `service.sh`。
 
-### 9. 常见问题
+### 6. 常见问题
 
 - 中文字体显示异常：见下方「Ubuntu系统下部署字体不正常」一节
 - `ZoneInfoNotFoundError` / 鉴权失败：见「可能会遇到的问题」
