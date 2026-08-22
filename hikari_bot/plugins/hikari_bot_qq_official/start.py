@@ -1,11 +1,12 @@
 import os
+import re
 import shutil
 import traceback
 from typing import List
 
 import nonebot
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from hikari_core import callback_hikari, init_hikari, init_hikari_no_output, output_hikari
 from hikari_core import get_cache_file,set_hikari_config
 
@@ -140,8 +141,14 @@ def web_run():
         logger.success(f'本地文件服务器启动成功 path={image_path}，请确认是否放行对应端口，如果没有公网ip请将配置项UPLOAD_IMAGE改为smms或oss')
 
         @app.get('/images/{filename}')
-        async def get_file(filename):
-            return FileResponse(image_path / filename)
+        async def get_file(filename: str):
+            # 防路径穿越：仅允许本地图片缓存中的 md5 文件名（upload_local 的命名规则）
+            if not re.fullmatch(r'[0-9a-f]{32}\.(?:jpg|png|gif|webp)', filename):
+                return JSONResponse(status_code=400, content={'detail': 'invalid filename'})
+            file = image_path / filename
+            if not file.is_file():
+                return JSONResponse(status_code=404, content={'detail': 'not found'})
+            return FileResponse(file)
 
 
 @delete_image_cache.handle()
