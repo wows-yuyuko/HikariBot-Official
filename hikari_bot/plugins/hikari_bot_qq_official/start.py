@@ -9,7 +9,7 @@ from hikari_core import callback_hikari, init_hikari, init_hikari_no_output, out
 from hikari_core import get_cache_file, set_hikari_config
 
 from hikari_core.core.model import Func, Hikari_Model
-from nonebot import get_driver, on_command, Bot
+from nonebot import get_driver, get_plugin_config, on_command
 from nonebot.adapters.qq import (
     ActionFailed,
     GuildMessageEvent,
@@ -21,6 +21,7 @@ from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
 
 
+from hikari_bot.plugins.hikari_bot_qq_official.config import Config
 from hikari_bot.plugins.hikari_bot_qq_official.select_state import wait_to_select
 from hikari_bot.plugins.hikari_bot_qq_official.template import select_template
 from hikari_bot.plugins.hikari_bot_qq_official.utils import upload_image, check_rule, image_path, byte2md5
@@ -29,6 +30,8 @@ bot_get_random_pic = on_command('wws 随机表情包', block=True, priority=5)
 delete_image_cache = on_command('wws 清除本地缓存', priority=5, block=True, permission=SUPERUSER)
 wws = on_command('wws', block=False, aliases={'WWS'}, priority=10)
 bot_pupu = on_command('噗噗', block=False, priority=5)
+
+plugin_config = get_plugin_config(Config)
 
 driver = get_driver()
 
@@ -70,17 +73,17 @@ async def _send_output(ev: MessageEvent, sender, hikari: Hikari_Model):
         await sender.send('呜呜呜，没有拿到可展示的内容，请稍后再试~')
 
 
-def _build_select_list(type: int, select_data):
-    """从 Select_Data 构建 SelectClan 列表。"""
+def _build_select_list(type: int, select_data, max_size: int = 10):
+    """从 Select_Data 构建 SelectClan 列表，最多展示 max_size 条。"""
     data_list = []
     if type == 1:
-        for index, club in enumerate(select_data[:10], start=1):
+        for index, club in enumerate(select_data[:max_size], start=1):
             data_list.append(
                 select_template.SelectShip(index=index, level_str=club.get('levelStr') or '0', ship_type_url=club.get('shipTypeImage') or '', ship_type=club.get('shipType') or 'Battleship',
                                            name_cn=club.get('nameCn') or '', name_cn360=club.get('nameCn360') or '', name_en=club.get('nameEnglish') or '')
             )
     elif type == 2:
-        for index, club in enumerate(select_data[:10], start=1):
+        for index, club in enumerate(select_data[:max_size], start=1):
             data_list.append(
                 select_template.SelectClan(index=index, tag=club.get('tag') or '', name=club.get('name') or '', ))
 
@@ -88,7 +91,7 @@ def _build_select_list(type: int, select_data):
 
 
 @wws.handle()
-async def main(ev: MessageEvent, bot: Bot, message: Message = CommandArg()):  # noqa: B008, PLR0915
+async def main(ev: MessageEvent, message: Message = CommandArg()):  # noqa: B008, PLR0915
     try:
         if not check_rule(ev):
             await wws.finish('该功能已禁用')
@@ -105,13 +108,14 @@ async def main(ev: MessageEvent, bot: Bot, message: Message = CommandArg()):  # 
         if hikari.Status == 'success':
             await _send_output(ev, wws, hikari)
         elif hikari.Status == 'wait':
-            # 展示选择界面
-            if bot.self_id not in get_driver().config.bot_is_md_file_list:
+            # 展示选择界面：开启 md 时选择类模板走 markdown，否则走渲染图片
+            if plugin_config.bot_select_msg_is_md:
                 if hikari.Output.Template in ('select-ship-v3.html', 'select-clan.html'):
+                    max_size = plugin_config.bot_select_msg_is_md_max_size
                     if hikari.Output.Template == 'select-ship-v3.html':
-                        await wws.send(select_template.get_ship_markdown(_build_select_list(1, hikari.Input.Select_Data)))
+                        await wws.send(select_template.get_ship_markdown(_build_select_list(1, hikari.Input.Select_Data, max_size)))
                     else:
-                        await wws.send(select_template.get_clan_markdown(_build_select_list(2, hikari.Input.Select_Data)))
+                        await wws.send(select_template.get_clan_markdown(_build_select_list(2, hikari.Input.Select_Data, max_size)))
                 else:
                     await _send_output(ev, wws, hikari)
             else:

@@ -4,13 +4,16 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from nonebot import on_message
+from nonebot import get_plugin_config, on_message
 from nonebot.adapters.qq import (
     MessageEvent,
 )
 from nonebot.log import logger
 
+from hikari_bot.plugins.hikari_bot_qq_official.config import Config
 from hikari_bot.plugins.hikari_bot_qq_official.utils import check_rule
+
+plugin_config = get_plugin_config(Config)
 
 bot_listen = on_message(priority=5, block=False)
 
@@ -51,9 +54,10 @@ async def change_select_state(ev: MessageEvent):
 
         select_num = int(msg)
         select_list = current_state.select_list or []
+        max_size = plugin_config.bot_select_msg_is_md_max_size
 
-        # 验证序号范围
-        if 1 <= select_num <= len(select_list):
+        # 验证序号范围（与展示的最大选择数保持一致）
+        if 1 <= select_num <= min(len(select_list), max_size):
             # 更新选择结果
             SelectProcess[qq_id] = SelectState(
                 state=False,
