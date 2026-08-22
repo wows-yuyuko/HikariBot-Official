@@ -1,8 +1,10 @@
 import re
 import time
 import traceback
+from zoneinfo import ZoneInfo
 
 import nonebot
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 from hikari_core import callback_hikari, init_hikari, init_hikari_no_output, output_hikari
@@ -47,6 +49,44 @@ set_hikari_config(
     game_path=str(get_cache_file()),
     save_template_html=False
 )
+
+# 每日 4 点（北京时间）自动清理 1 小时前的图片缓存
+_scheduler = AsyncIOScheduler(timezone=ZoneInfo('Asia/Shanghai'))
+
+
+def _cleanup_old_images(max_age_seconds: int = 3600) -> int:
+    """删除 image_cache 中超过 max_age_seconds 的图片，返回删除数量"""
+    cutoff = time.time() - max_age_seconds
+    image_path.mkdir(parents=True, exist_ok=True)
+    removed = 0
+    for file in image_path.iterdir():
+        try:
+            if file.is_file() and file.stat().st_mtime < cutoff:
+                file.unlink()
+                removed += 1
+        except OSError:
+            logger.warning(f'删除图片失败，跳过: {file.name}')
+    return removed
+
+
+@driver.on_startup
+def start_scheduler():
+    _scheduler.add_job(
+        _cleanup_old_images,
+        'cron',
+        hour=4,
+        minute=0,
+        id='daily_image_cache_cleanup',
+        replace_existing=True,
+    )
+    _scheduler.start()
+    logger.success('已启动每日 4 点图片缓存清理任务')
+
+
+@driver.on_shutdown
+def stop_scheduler():
+    if _scheduler.running:
+        _scheduler.shutdown(wait=False)
 
 
 
@@ -163,17 +203,7 @@ def web_run():
 @delete_image_cache.handle()
 async def delete_image(ev: MessageEvent):
     try:
-        # 仅清理 1 小时之前的图片缓存，保留近期图片
-        cutoff = time.time() - 3600
-        image_path.mkdir(parents=True, exist_ok=True)
-        removed = 0
-        for file in image_path.iterdir():
-            try:
-                if file.is_file() and file.stat().st_mtime < cutoff:
-                    file.unlink()
-                    removed += 1
-            except OSError:
-                logger.warning(f'删除图片失败，跳过: {file.name}')
+        removed = _cleanup_old_images()
         await delete_image_cache.send(f'清理完成，已删除 {removed} 个 1 小时前的图片')
     except Exception:
         logger.error(traceback.format_exc())
