@@ -1,14 +1,16 @@
-import gzip
 import hashlib
-import io
-import os
 
 import httpx
 import orjson
 import oss2
 from hikari_core import get_cache_file
 from nonebot import get_driver
-from nonebot.adapters.qq import DirectMessageCreateEvent, GuildMessageEvent
+from nonebot.adapters.qq import (
+    C2CMessageCreateEvent,
+    DirectMessageCreateEvent,
+    GroupMessageCreateEvent,
+    GuildMessageEvent,
+)
 from nonebot.log import logger
 
 driver = get_driver()
@@ -17,53 +19,81 @@ config = driver.config
 image_path = get_cache_file() / 'image_cache'
 
 
-def check_rule(ev):
-    if driver.config.filter_rule == 'None':
-        return True
-    if isinstance(ev, DirectMessageCreateEvent) and driver.config.private:
-        return True
-    if isinstance(ev, GuildMessageEvent):
-        if (
-                driver.config.filter_rule == 'white'
-                and (int(ev.guild_id) in driver.config.white_guild_list or int(ev.channel_id) in driver.config.white_channel_list)
-        ) or (
-                driver.config.filter_rule == 'black'
-                and (int(ev.guild_id) not in driver.config.ban_guild_list and int(ev.channel_id) not in driver.config.ban_channel_list)
-        ):
-            return True
-    else:
-        return True
-    logger.error('消息 msg=' + ev.get_message())
+def _safe_int(value, default=0):
+    """安全转换整数，解析失败时返回默认值"""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _check_guild_lists(ev, filter_rule, cfg):
+    """频道消息按白/黑名单过滤（白名单模式需命中任一白名单，黑名单模式需不命中任一黑名单）"""
+    guild_id = _safe_int(ev.guild_id)
+    channel_id = _safe_int(ev.channel_id)
+    if filter_rule == 'white':
+        return (
+            guild_id in getattr(cfg, 'white_guild_list', [])
+            or channel_id in getattr(cfg, 'white_channel_list', [])
+        )
+    if filter_rule == 'black':
+        return (
+            guild_id not in getattr(cfg, 'ban_guild_list', [])
+            and channel_id not in getattr(cfg, 'ban_channel_list', [])
+        )
+    logger.warning(f'未知过滤规则 filter_rule={filter_rule}，按拒绝处理')
     return False
 
 
-def encode_gzip(bytes):
-    buf = io.BytesIO(bytes)
-    gf = gzip.GzipFile(fileobj=buf)
-    return gf.read().decode('utf-8')
+def check_rule(ev):
+    cfg = driver.config
+    filter_rule = getattr(cfg, 'filter_rule', None)
+    if filter_rule in (None, 'None'):
+        return True
+
+    private = bool(getattr(cfg, 'private', True))
+
+    # 私聊类消息（c2c 私聊 / 频道私信）：由 private 开关控制
+    if isinstance(ev, C2CMessageCreateEvent):
+        return private
+    if isinstance(ev, DirectMessageCreateEvent):
+        return private or _check_guild_lists(ev, filter_rule, cfg)
+
+    # 群消息：黑名单模式按 ban_group_list 过滤（无群白名单配置，白名单模式默认放行）
+    if isinstance(ev, GroupMessageCreateEvent):
+        if filter_rule == 'black':
+            return _safe_int(ev.group_id) not in getattr(cfg, 'ban_group_list', [])
+        return True
+
+    # 频道消息：按白/黑名单过滤
+    if isinstance(ev, GuildMessageEvent):
+        return _check_guild_lists(ev, filter_rule, cfg)
+
+    logger.warning(f'未知消息类型，按放行处理: {type(ev).__name__}')
+    return True
 
 
-def byte2md5(bytes):
-    return hashlib.md5(bytes).hexdigest()
+def byte2md5(data):
+    return hashlib.md5(data).hexdigest()
 
 
-def upload_oss(bytes):
+def upload_oss(data):
     endpoint = config.oss_endpoint
     auth = oss2.Auth(config.oss_id, config.oss_key)
     bucket = oss2.Bucket(auth, endpoint, config.oss_bucket)
-    md5 = byte2md5(bytes)
+    md5 = byte2md5(data)
     key = f'bot_image/{md5}.png'
-    bucket.put_object(key, bytes)
+    bucket.put_object(key, data)
     url = bucket.sign_url('GET', key, 3600, slash_safe=True)
-    url = url.replace('http', 'https')
-    logger.info(f'上传oss图片成功，url: {url}')
+    url = url.replace('http://', 'https://')
+    logger.info(f'上传oss图片成功，key: {key}')
     return url
 
 
-async def upload_smms(bytes):
+async def upload_smms(data):
     headers = {'Authorization': config.smms_key}
     async with httpx.AsyncClient(headers=headers) as client:
-        files = {'smfile': bytes}
+        files = {'smfile': data}
         url = 'https://smms.app/api/v2/upload'
         resp = await client.post(url, files=files)
         result = orjson.loads(resp.content)
@@ -74,21 +104,21 @@ async def upload_smms(bytes):
             return result['images']
 
 
-def upload_local(bytes):
-    md5 = byte2md5(bytes)
-    if not os.path.exists(image_path):
-        os.mkdir(image_path)
+def upload_local(data):
+    md5 = byte2md5(data)
+    image_path.mkdir(parents=True, exist_ok=True)
     with open(image_path / f'{md5}.jpg', 'wb') as f:
-        f.write(bytes)
+        f.write(data)
     return f'{get_driver().config.upload_local_url}/images/{md5}.jpg'
 
 
-async def upload_image(bytes):
+async def upload_image(data):
     if config.upload_image == 'oss':
-        return upload_oss(bytes)
+        return upload_oss(data)
     elif config.upload_image == 'smms':
-        return await upload_smms(bytes)
+        return await upload_smms(data)
     elif config.upload_image == 'local':
-        return upload_local(bytes)
+        return upload_local(data)
     else:
+        logger.warning(f'未知的上传方式 upload_image={config.upload_image}')
         return None

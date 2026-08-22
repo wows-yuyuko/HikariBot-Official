@@ -1,24 +1,21 @@
-import os
 import re
 import shutil
 import traceback
-from typing import List
 
 import nonebot
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 from hikari_core import callback_hikari, init_hikari, init_hikari_no_output, output_hikari
-from hikari_core import get_cache_file,set_hikari_config
+from hikari_core import get_cache_file, set_hikari_config
 
 from hikari_core.core.model import Func, Hikari_Model
-from nonebot import get_driver, on_command, on_message, Bot
+from nonebot import get_driver, on_command, Bot
 from nonebot.adapters.qq import (
     ActionFailed,
     GuildMessageEvent,
     Message,
     MessageEvent,
     MessageSegment, )
-from nonebot.exception import FinishedException
 from nonebot.log import logger
 from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
@@ -26,13 +23,12 @@ from nonebot.permission import SUPERUSER
 
 from hikari_bot.plugins.hikari_bot_qq_official.select_state import wait_to_select
 from hikari_bot.plugins.hikari_bot_qq_official.template import select_template
-from hikari_bot.plugins.hikari_bot_qq_official.utils import upload_image, check_rule, image_path
+from hikari_bot.plugins.hikari_bot_qq_official.utils import upload_image, check_rule, image_path, byte2md5
 
 bot_get_random_pic = on_command('wws 随机表情包', block=True, priority=5)
 delete_image_cache = on_command('wws 清除本地缓存', priority=5, block=True, permission=SUPERUSER)
 wws = on_command('wws', block=False, aliases={'WWS'}, priority=10)
 bot_pupu = on_command('噗噗', block=False, priority=5)
-bot_listen = on_message(priority=5, block=False)
 
 driver = get_driver()
 
@@ -61,10 +57,17 @@ async def _send_output(ev: MessageEvent, sender, hikari: Hikari_Model):
             await sender.send(MessageSegment.file_image(data))
         else:
             url = await upload_image(data)
-            logger.success(url)
+            if url is None:
+                await sender.send('呜呜呜，图片上传失败，请检查 UPLOAD_IMAGE 配置~')
+                return
+            logger.success(f'图片上传成功 md5={byte2md5(data)}')
             await sender.send(MessageSegment.image(url))
     elif isinstance(data, str):
         await sender.send(data)
+    else:
+        # Data 为 None 或未渲染的数据类型：给出兜底提示，避免静默丢失
+        logger.warning(f'输出数据为空或类型不支持: type={type(data).__name__}')
+        await sender.send('呜呜呜，没有拿到可展示的内容，请稍后再试~')
 
 
 def _build_select_list(type: int, select_data):
@@ -127,17 +130,19 @@ async def main(ev: MessageEvent, bot: Bot, message: Message = CommandArg()):  # 
             await wws.send(f'发不出图片，可能撞限速了QAQ，请在频道重新尝试\n{e}')
         except Exception:
             logger.error(traceback.format_exc())
-    except Exception:
+    except Exception as e:
         logger.error(traceback.format_exc())
-        await wws.send('呜呜呜发生了错误，可能是网络问题，如果过段时间不能恢复请联系麻麻哦~')
+        if isinstance(e, (ValueError, TypeError)):
+            await wws.send('呜呜呜参数似乎有问题，请检查指令格式~')
+        else:
+            await wws.send('呜呜呜发生了错误，可能是网络问题，如果过段时间不能恢复请联系麻麻哦~')
 
 
 @driver.on_startup
 def web_run():
     if get_driver().config.upload_image == 'local':
         app: FastAPI = nonebot.get_app()
-        if not os.path.exists(image_path):
-            os.mkdir(image_path)
+        image_path.mkdir(parents=True, exist_ok=True)
         logger.success(f'本地文件服务器启动成功 path={image_path}，请确认是否放行对应端口，如果没有公网ip请将配置项UPLOAD_IMAGE改为smms或oss')
 
         @app.get('/images/{filename}')
@@ -155,8 +160,7 @@ def web_run():
 async def delete_image(ev: MessageEvent):
     try:
         shutil.rmtree(image_path, ignore_errors=True)
-        if not os.path.exists(image_path):
-            os.mkdir(image_path)
+        image_path.mkdir(parents=True, exist_ok=True)
         await delete_image_cache.send('清除缓存成功')
     except Exception:
         logger.error(traceback.format_exc())

@@ -72,6 +72,11 @@ async def wait_to_select(hikari):
     platform_id = hikari.UserInfo.PlatformId
     select_data = hikari.Input.Select_Data or []
 
+    # 同一用户已有进行中的选择流程时，拒绝并发，避免共享状态槽竞态
+    existing = SelectProcess.get(platform_id)
+    if existing and existing.state:
+        return hikari.error('你有一个选择操作正在进行中，请等待完成或超时后再试')
+
     # 初始化选择状态
     SelectProcess[platform_id] = SelectState(
         state=True,
