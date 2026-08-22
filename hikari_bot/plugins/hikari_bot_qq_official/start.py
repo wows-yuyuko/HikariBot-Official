@@ -70,7 +70,7 @@ def _cleanup_old_images(max_age_seconds: int = 3600) -> int:
 
 
 @driver.on_startup
-def start_scheduler():
+async def start_scheduler():
     _scheduler.add_job(
         _cleanup_old_images,
         'cron',
@@ -84,7 +84,7 @@ def start_scheduler():
 
 
 @driver.on_shutdown
-def stop_scheduler():
+async def stop_scheduler():
     if _scheduler.running:
         _scheduler.shutdown(wait=False)
 
