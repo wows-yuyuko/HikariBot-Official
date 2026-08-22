@@ -44,8 +44,14 @@ fi
 if [ -z "$PYTHON" ]; then
     echo "    未检测到符合要求的本机 Python（>=3.11,<3.13），使用 uv 下载隔离 Python 3.11..."
     if ! command -v uv >/dev/null 2>&1; then
-        echo "    安装 uv..."
-        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "    安装 uv（优先国内镜像 uv.agentsmirror.com，失败则回退官方源）..."
+        if curl -LsSf https://uv.agentsmirror.com/install-cn.sh -o /tmp/uv-install-cn.sh 2>/dev/null && sh /tmp/uv-install-cn.sh; then
+            echo "    uv 安装成功（国内镜像）"
+        else
+            echo "    国内镜像不可用，回退官方安装器..."
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+        fi
+        rm -f /tmp/uv-install-cn.sh
         export PATH="$HOME/.local/bin:$PATH"
     fi
     # uv 下载 Python 默认走国内镜像（南京大学 github-release 镜像，稳定可靠）；
