@@ -44,7 +44,8 @@ set_hikari_config(
     http2=driver.config.http2,
     proxy=_proxy,
     token=driver.config.api_token,
-    game_path=str(get_cache_file())
+    game_path=str(get_cache_file()),
+    save_template_html=False
 )
 
 
