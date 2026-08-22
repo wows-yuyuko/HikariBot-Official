@@ -16,16 +16,11 @@ dependencies = [
     "orjson >=3.8.11",
     "oss2 >=2.18.3",
     "httpx[http2] >=0.28.1",
-    "asyncio >=3.4.3",
     "APScheduler >=3.10.1",
     "jinja2 >=3.0.0",
     "pydantic >=2.13.4",
     "playwright >=1.40.0",
-    "aiofiles >=0.8.0",
-    "beautifulsoup4 >=4.12.2",
     "loguru >=0.7.0",
-    "json_tools >=0.4.1",
-    "pytz >=2025.2",
     "pillow >=12.2.0",
     "nb-cli >=1.7.4"
 ]
