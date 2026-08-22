@@ -111,8 +111,6 @@ poetry install                      # 依赖有变动时按 poetry.lock 同步
 ./service.sh restart                # 重启生效
 ```
 
-> 旧版 `manage.sh`（`install` / `start` / `update`，基于 `nb run`）为历史脚本，其 `update` **不会**更新子模块，建议改用 `deploy.sh` / `service.sh`。
-
 ### 6. 常见问题
 
 - 中文字体显示异常：见下方「Ubuntu系统下部署字体不正常」一节
@@ -135,7 +133,7 @@ poetry install                      # 依赖有变动时按 poetry.lock 同步
 以下是旧更新方法
 1. 按不同版本
    - Windows一键包：下载最新一键包，复制旧版本中`accounts`文件夹和`env.prod`文件替换至新版文件夹中即可
-   - 完整版：以管理员身份运行`更新.bat`或执行`./manage.sh update`
+   - 完整版：以管理员身份运行`更新.bat`（Linux 更新请参考上文「Linux 部署」的更新步骤）
       >等效于在cmd中执行如下代码
       ```
       pip install --upgrade hikari-bot
