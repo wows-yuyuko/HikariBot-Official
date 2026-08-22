@@ -29,7 +29,7 @@ git submodule update --remote
 
 ## Linux 部署（Poetry 方案）
 
-> 以 Ubuntu / Debian 为例；要求已安装 **Python 3.11**（项目要求 `>=3.11,<3.13`）。部署使用 [Poetry](https://python-poetry.org/) 构建**完全隔离**的项目虚拟环境（生成在项目内 `.venv`），不污染系统 Python。
+> 以 Ubuntu / Debian 为例。部署使用 [Poetry](https://python-poetry.org/) 构建**完全隔离**的项目虚拟环境（生成在项目内 `.venv`），不污染系统 Python。本机有 Python 3.11/3.12 可直接使用；没有则脚本自动用 uv 下载隔离的 Python 3.11。
 
 ### 1. 克隆代码（带 hikari_core 子模块）
 
@@ -47,7 +47,7 @@ cd HikariBot-Official
 
 脚本自动完成：
 
-1. 检查 Python 版本（3.11 ~ 3.12）
+1. 检查本机 Python（要求 `>=3.11,<3.13`）：符合要求则**询问**是否使用本机 Python 构建（默认是）；不符合或选否，则自动用 **uv 下载隔离的 Python 3.11**
 2. 初始化 `hikari_core` 子模块
 3. 安装 Poetry（若缺失，用**官方安装器**；不要用 apt 安装 Poetry，Debian 打包版默认关闭虚拟环境创建）
 4. 创建隔离环境 `.venv`，并按 `poetry.lock` **精确安装**依赖
