@@ -1,5 +1,5 @@
 import re
-import shutil
+import time
 import traceback
 
 import nonebot
@@ -163,9 +163,18 @@ def web_run():
 @delete_image_cache.handle()
 async def delete_image(ev: MessageEvent):
     try:
-        shutil.rmtree(image_path, ignore_errors=True)
+        # 仅清理 1 小时之前的图片缓存，保留近期图片
+        cutoff = time.time() - 3600
         image_path.mkdir(parents=True, exist_ok=True)
-        await delete_image_cache.send('清除缓存成功')
+        removed = 0
+        for file in image_path.iterdir():
+            try:
+                if file.is_file() and file.stat().st_mtime < cutoff:
+                    file.unlink()
+                    removed += 1
+            except OSError:
+                logger.warning(f'删除图片失败，跳过: {file.name}')
+        await delete_image_cache.send(f'清理完成，已删除 {removed} 个 1 小时前的图片')
     except Exception:
         logger.error(traceback.format_exc())
         await delete_image_cache.send('清除缓存失败')
