@@ -117,42 +117,6 @@ poetry install                      # 依赖有变动时按 poetry.lock 同步
 - `ZoneInfoNotFoundError` / 鉴权失败：见「可能会遇到的问题」
 
 
-## 特色
-
-- [x] 账号总体、单船、近期战绩
-- [x] 全指令支持参数乱序
-- [x] 快速切换绑定账号
-- [x] 支持@快速查询
-- [x] 全异步，高并发下性能更优
-- [x] 适配官方BOT
-
-
-## 更新
-实验性更新指令：`wws 更新Hikari`
-请确保在能登录上服务器的情况下使用
-以下是旧更新方法
-1. 按不同版本
-   - Windows一键包：下载最新一键包，复制旧版本中`accounts`文件夹和`env.prod`文件替换至新版文件夹中即可
-   - 完整版（源码部署）：`git pull` 更新代码（含子模块），然后重启服务（Linux 见上文「Linux 部署」更新步骤；Windows 重新运行`启动.bat`）
-      >等效于在cmd中执行如下代码
-      ```
-      pip install --upgrade hikari-bot
-      git pull
-      ```
-   - 插件版：在cmd中执行如下代码
-      ```
-      pip install --upgrade hikari-bot
-      ```
-2. **对比`.env.prod-example`中新增的配置项，并同步至你本地的`env.prod`**
-    - install结束后会打印当前版本
-    - 您也可以通过`pip show hikari-bot`查看当前Hikari版本
-    - 如果没有更新到最新版请等待一会儿，镜像站一般每五分钟同步
-    - 从0.3.2.2版本开始，您没有填写的配置将按.env文件中的默认配置执行，具体逻辑为
-      - 私聊、频道默认禁用
-      - 群聊默认开启，默认屏蔽官方交流群
-
-
-
 ## 可能会遇到的问题
 
 ### 出现ZoneInfoNotFoundError报错
