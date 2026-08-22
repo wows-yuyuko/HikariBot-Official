@@ -1,0 +1,3 @@
+[submodule "hikari_core"]
+	path = hikari_core
+	url = https://github.com/wows-yuyuko/Hikari-core-v2.git

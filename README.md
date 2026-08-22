@@ -7,6 +7,21 @@
 战舰世界水表BOT，基于Nonebot2，适配QQ官方机器人
 水表人，出击！wws me recent！！！  
 
+## 克隆与依赖同步
+
+> 本项目通过 git 子模块管理 `hikari_core`（战舰世界 SDK），克隆 / 同步时请带上子模块：
+
+```bash
+# 克隆（自动拉取 hikari_core 子模块）
+git clone --recurse-submodules <本仓库地址>
+
+# 若已克隆但子模块为空，初始化拉取
+git submodule update --init --recursive
+
+# 日常同步（仓库已配置 submodule.recurse，pull 会顺带更新子模块）
+git pull
+```
+
 
 ## 特色
 
