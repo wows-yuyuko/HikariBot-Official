@@ -1,11 +1,11 @@
 <!-- markdownlint-disable MD033 MD041 -->
 
-# 内部机器人项目
-
 ## 简介
 
 战舰世界水表BOT，基于Nonebot2，适配QQ官方机器人
 水表人，出击！wws me recent！！！  
+
+交流群: 967546463
 
 ## 克隆与依赖同步
 
@@ -32,56 +32,9 @@ git submodule update --remote
 - [x] 账号总体、单船、近期战绩
 - [x] 全指令支持参数乱序
 - [x] 快速切换绑定账号
-- [x] 实时推送对局信息
 - [x] 支持@快速查询
 - [x] 全异步，高并发下性能更优
 - [x] 适配官方BOT
-
-  <details>
-  <summary>点我查看功能列表</summary>
-
-  - 绑定账号：wws bind/set/绑定 [服务器+游戏昵称]：
-  - 查询账号绑定列表：wws [查询/查]绑定/绑定列表 [me/@群友]：
-  - 切换删除绑定账号：wws [切换/删除]绑定 [序号]
-  - 查询账号总体战绩：wws [(服务器+游戏昵称)/@群友/me]
-  - 查询账号历史记录：wws [(服务器+游戏昵称)/@群友/me] record
-  - 查询账号近期战绩：wws [(服务器+游戏昵称)/@群友/me] recent [日期]
-  - 查询单船总体战绩：wws [(服务器+游戏昵称)/@群友/me] ship [船名]
-  - 查询单船近期战绩：wws [(服务器+游戏昵称)/@群友/me] ship [船名] recent [日期]
-  - 查询服务器排行榜：wws [服务器+战舰名] rank/ship.rank
-  - 查询军团详细信息：wws [(服务器+军团名)/@群友/me] clan
-  - 查询军团历史记录：wws [(服务器+军团名)/@群友/me] clan record
-  - 查询舰船中英文名：wws [搜/查船名] [国家][等级][类型]
-  - 添加游戏战绩监控: wws [添加监控] [服务器] [游戏昵称] [备注名]
-  - 查询游戏战绩监控: wws [查询监控]
-  - 删除游戏战绩监控: wws [删除监控] [监控序号]
-  - 重置全部战绩监控: wws [重置监控](该指令仅限superuser使用)
-  - 检查版本更新：wws 检查更新
-  - 更新：wws 更新Hikari
-  - 查看帮助：wws help
-  - 噗噗：一言
-
-  </details>
-## 在Windows系统上快速部署
-
-  `windows安装python版本请勿大于3.11,建议版本3.10`
-
-1. 下载Hikari的最新Release并解压到合适文件夹
-2. 复制一份`.env.prod-example`文件，并将其重命名为`.env.prod`,打开并按其中注释编辑
-    >只显示了.env，没有后面的后缀？请百度`windows如何显示文件后缀名`
-    ```
-    id = xxxx
-    token = xxxxx
-    secret = xxxxx
-    API_TOKEN = xxxxxxxx #无需引号，TOKEN即回复您的邮件所带的一串由[数字+冒号+英文/数字]组成的字符串
-    SUPERUSERS=["唯一ID"]
-    ```
-   - 最后TOKEN应该长这样 `API_TOKEN = 123764323:ba1f2511fc30423bdbb183fe33`
-   - SUPERUSERS请在首次启动BOT后发送test，BOT将会回复你的USER_ID，再填入配置文件中重启即可
-3. 如果在服务器上部署保持`UPLOAD_IMAGE = local`即可，如需在无公网IP的环境上部署，请将该项修改为`oss`或`smms`
-   - 如使用`smms`，请前往[SMMS](https://smms.app/)注册账号后进入[API页面](https://smms.app/home/apitoken)获取Token并填入`SMMS_KEY`
-   - 如使用`oss`，请前往阿里云OSS创建对应存储库，将EndPoint和Bucket名分别填入`OSS_ENDPOINT`和`OSS_BUCKET`，并创建可读写Access令牌，将ID和Key分别填入`OSS_ID`和`OSS_KEY`
-4. 双击`启动.bat`
 
 
 ## 更新
