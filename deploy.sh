@@ -48,6 +48,9 @@ if [ -z "$PYTHON" ]; then
         curl -LsSf https://astral.sh/uv/install.sh | sh
         export PATH="$HOME/.local/bin:$PATH"
     fi
+    # uv 下载 Python 默认走国内镜像（南京大学 github-release 镜像，稳定可靠）；
+    # 如需更换，可先 export UV_PYTHON_INSTALL_MIRROR=<镜像地址> 再执行本脚本，此处会尊重你的设置
+    export UV_PYTHON_INSTALL_MIRROR="${UV_PYTHON_INSTALL_MIRROR:-https://mirror.nju.edu.cn/github-release/astral-sh/python-build-standalone}"
     uv python install 3.11
     PYTHON="$(uv python find 3.11)"
 fi

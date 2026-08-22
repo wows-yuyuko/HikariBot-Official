@@ -56,6 +56,8 @@ cd HikariBot-Official
 
 > 若 `poetry install` 报 `ensurepip` 相关错误，先执行 `sudo apt install -y python3.11-venv` 再重跑。
 
+> uv 下载 Python 默认走国内镜像（南京大学 `mirror.nju.edu.cn` 的 github-release 镜像）；如需更换，先 `export UV_PYTHON_INSTALL_MIRROR=<镜像地址>` 再运行 `./deploy.sh` 即可（脚本会尊重你的设置）。
+
 ### 3. 配置环境变量
 
 ```bash
