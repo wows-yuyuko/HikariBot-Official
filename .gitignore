@@ -155,3 +155,5 @@ pyproject.lock
 hikari-core/
 .idea/
 data/
+.idea/
+*.iml
