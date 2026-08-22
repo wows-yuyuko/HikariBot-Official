@@ -1,0 +1,112 @@
+name: Build Windows 离线包
+
+on:
+  workflow_dispatch:          # 手动触发
+  push:
+    tags:
+      - 'v*'                  # 推送 v* 标签时自动构建并发布 Release
+
+jobs:
+  build-windows:
+    name: 构建 Windows 离线运行包
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: 检出代码（含 hikari_core 子模块）
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: 安装 micromamba
+        run: |
+          mkdir -p "$HOME/micromamba-bin"
+          curl -LsSf https://micro.mamba.pm/api/micromamba/win-64/latest -o /tmp/mm.tar.bz2
+          tar -xjf /tmp/mm.tar.bz2 -C "$HOME/micromamba-bin"
+          MMB="$(find "$HOME/micromamba-bin" -name micromamba.exe | head -n1)"
+          export PATH="$(dirname "$MMB"):$PATH"
+          echo "$(dirname "$MMB")" >> "$GITHUB_PATH"
+          micromamba --version
+
+      - name: 创建隔离 Python 3.11 环境（conda-forge）
+        run: |
+          micromamba create -p "$PWD/pyenv" python=3.11 -c conda-forge -y
+          micromamba run -p "$PWD/pyenv" python -V
+
+      - name: 安装项目依赖（非 editable，避免写入构建机绝对路径）
+        run: |
+          micromamba run -p "$PWD/pyenv" python -m pip install -U pip
+          micromamba run -p "$PWD/pyenv" python -m pip install .
+
+      - name: 安装 Playwright Chromium（打进包内，PLAYWRIGHT_BROWSERS_PATH=0）
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: '0'
+        run: |
+          micromamba run -p "$PWD/pyenv" python -m playwright install chromium
+
+      - name: conda-pack 打包环境（生成可迁移环境）
+        run: |
+          micromamba run -p "$PWD/pyenv" python -m pip install conda-pack
+          rm -f pyenv-packed.tar.gz
+          micromamba run -p "$PWD/pyenv" conda-pack -p "$PWD/pyenv" -o pyenv-packed.tar.gz
+
+      - name: 组装离线包目录
+        run: |
+          mkdir -p dist/HikariBot-Windows/pyenv
+          cp -r hikari_bot hikari_core dist/HikariBot-Windows/
+          cp bot.py pyproject.toml poetry.lock README.md LICENSE .env.prod-example deploy.sh service.sh dist/HikariBot-Windows/
+          tar -xzf pyenv-packed.tar.gz -C dist/HikariBot-Windows/pyenv
+          rm -rf dist/HikariBot-Windows/hikari_core/.git
+          rm -rf dist/HikariBot-Windows/pyenv/.cache dist/HikariBot-Windows/pyenv/pkgs
+          du -sh dist/HikariBot-Windows
+
+      - name: 生成包内启动脚本 start.bat（含首次运行 conda-unpack）
+        run: |
+          cat > dist/HikariBot-Windows/start.bat <<'EOF'
+          @echo off
+          set PATH=%~dp0pyenv\Library\bin;%~dp0pyenv;%PATH%
+          if exist %~dp0\pyenv (
+              set PLAYWRIGHT_BROWSERS_PATH=0
+          )
+          if exist %~dp0pyenv\Scripts\conda-unpack.exe if not exist %~dp0pyenv\.unpacked (
+              echo First run: preparing offline environment...
+              %~dp0pyenv\Scripts\conda-unpack.exe
+              echo done> %~dp0pyenv\.unpacked
+          )
+          cd /d %~dp0
+          if not exist .env.prod (
+              goto nofile
+          )
+          :start
+          echo Launching HikariBot...
+          python bot.py
+          pause
+          goto:eof
+          :nofile
+          echo Please prepare a .env.prod file first! (copy .env.prod-example and fill it)
+          pause
+          EOF
+          echo "start.bat generated:"
+          cat dist/HikariBot-Windows/start.bat
+
+      - name: 压缩为 zip
+        shell: pwsh
+        working-directory: dist
+        run: Compress-Archive -Path HikariBot-Windows -DestinationPath HikariBot-Windows.zip -Force
+
+      - name: 上传构建产物（artifact）
+        uses: actions/upload-artifact@v4
+        with:
+          name: HikariBot-Windows
+          path: dist/HikariBot-Windows.zip
+          if-no-files-found: error
+
+      - name: 发布到 GitHub Release（仅 tag 触发）
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/HikariBot-Windows.zip
+          generate_release_notes: true

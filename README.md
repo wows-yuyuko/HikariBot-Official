@@ -119,6 +119,26 @@ poetry install                      # 依赖有变动时按 poetry.lock 同步
 - `ZoneInfoNotFoundError` / 鉴权失败：见「可能会遇到的问题」
 
 
+## Windows 离线包（CI 自动构建）
+
+> 通过 GitHub Actions 自动打包：内置 Python 3.11 环境 + 全部依赖 + Chromium 浏览器，**免安装、可离线运行**（与 QQ 官方平台通信需联网）。
+
+### 获取
+
+- 推送 `v*` 标签（如 `git tag v1.0.0 && git push --tags`）自动构建并发布到 **GitHub Release**
+- 或到仓库 Actions 页面手动点击 "Run workflow"
+
+### 使用
+
+1. 下载 `HikariBot-Windows.zip` 并解压（**解压后请勿移动整个文件夹**）
+2. 复制 `.env.prod-example` 为 `.env.prod` 并填写（`QQ_BOTS` / `API_TOKEN` / `SUPERUSERS`）
+3. 双击 `start.bat` 启动（首次运行会自动初始化环境）
+
+### 更新
+
+下载新版 zip，保留旧包中的 `accounts`、`data`、`.env.prod`，覆盖解压即可。
+
+
 ## 可能会遇到的问题
 
 ### 出现ZoneInfoNotFoundError报错
