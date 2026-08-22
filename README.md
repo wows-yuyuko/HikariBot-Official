@@ -78,7 +78,7 @@ vi .env.prod
 ./service.sh stop      # 停止
 ```
 
-- 进程后台运行，标准输出/错误日志写入 `logs/bot.log`（机器人自身日志在 `logs/info.log`）
+- 进程后台运行（通过 `nb run` 启动，即 `poetry run nb run`），标准输出/错误日志写入 `logs/bot.log`（机器人自身日志在 `logs/info.log`）
 - 生产环境建议用 systemd 托管（可选）：
 
 ```ini
@@ -90,7 +90,7 @@ After=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=/path/to/HikariBot-Official
-ExecStart=/path/to/HikariBot-Official/.venv/bin/python bot.py
+ExecStart=/path/to/HikariBot-Official/.venv/bin/nb run
 Restart=on-failure
 
 [Install]

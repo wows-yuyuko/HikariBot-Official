@@ -30,7 +30,7 @@ start() {
     fi
     mkdir -p logs
     echo "启动 $APP ..."
-    nohup poetry run python bot.py >> "$LOG_FILE" 2>&1 &
+    nohup poetry run nb run >> "$LOG_FILE" 2>&1 &
     echo $! > "$PID_FILE"
     sleep 2
     if is_running; then
