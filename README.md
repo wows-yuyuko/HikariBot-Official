@@ -18,8 +18,12 @@ git clone --recurse-submodules <本仓库地址>
 # 若已克隆但子模块为空，初始化拉取
 git submodule update --init --recursive
 
-# 日常同步（仓库已配置 submodule.recurse，pull 会顺带更新子模块）
+# 日常同步（先配置一次，之后 git pull 会顺带更新子模块）
+git config submodule.recurse true
 git pull
+
+# 或将子模块手动更新到远端最新提交
+git submodule update --remote
 ```
 
 
