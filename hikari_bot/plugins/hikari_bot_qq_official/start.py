@@ -150,9 +150,11 @@ async def init_hikari_process(ev: MessageEvent, message: Message) -> Hikari_Mode
     server_type = driver.config.platform
     group_id = None
     command_text = ' '.join(p.strip() for p in parts if p.strip())
+    str_platform_id = str(platform_id)
+    logger.success(f'init_hikari 传递参数 platform={server_type} PlatformId={str_platform_id} 命令={command_text}')
     return await init_hikari_no_output(
         platform=server_type,
-        PlatformId=str(platform_id),
+        PlatformId=str_platform_id,
         command_text=command_text,
         GroupId=group_id,
     )
