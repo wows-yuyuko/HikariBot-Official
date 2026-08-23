@@ -9,7 +9,7 @@ from nonebot.adapters.qq import (
     C2CMessageCreateEvent,
     DirectMessageCreateEvent,
     GroupMessageCreateEvent,
-    GuildMessageEvent,
+    GuildMessageEvent, MessageEvent,
 )
 from nonebot.log import logger
 
@@ -71,6 +71,10 @@ def check_rule(ev):
 
     logger.warning(f'未知消息类型，按放行处理: {type(ev).__name__}')
     return True
+
+def is_text_or_at_message(ev: MessageEvent):
+    """仅当消息只含 纯文本 和 @提及 段时返回 True，其余（图片/表情/文件/@全体/@频道等）一律不处理"""
+    return all(seg.type in ('text', 'mention_user') for seg in ev.get_message())
 
 
 def byte2md5(data):

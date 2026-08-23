@@ -1,6 +1,7 @@
 import re
 import time
 import traceback
+from typing import Optional
 from zoneinfo import ZoneInfo
 
 import nonebot
@@ -20,18 +21,13 @@ from nonebot.adapters.qq import (
     MessageSegment, )
 from nonebot.log import logger
 from nonebot.params import CommandArg
-from nonebot.permission import SUPERUSER
-
 
 from hikari_bot.plugins.hikari_bot_qq_official.config import Config
 from hikari_bot.plugins.hikari_bot_qq_official.select_state import wait_to_select
 from hikari_bot.plugins.hikari_bot_qq_official.template import select_template
-from hikari_bot.plugins.hikari_bot_qq_official.utils import upload_image, check_rule, image_path, byte2md5
+from hikari_bot.plugins.hikari_bot_qq_official.utils import upload_image, check_rule, image_path, byte2md5, is_text_or_at_message
 
-bot_get_random_pic = on_command('wws 随机表情包', block=True, priority=5)
-delete_image_cache = on_command('wws 清除本地缓存', priority=5, block=True, permission=SUPERUSER)
-wws = on_command('wws', block=False, aliases={'WWS'}, priority=10)
-bot_pupu = on_command('噗噗', block=False, priority=5)
+wws = on_command('wws', block=False, aliases={'WWS'}, priority=10, rule=is_text_or_at_message)
 
 plugin_config = get_plugin_config(Config)
 
@@ -89,8 +85,6 @@ async def stop_scheduler():
         _scheduler.shutdown(wait=False)
 
 
-
-
 async def _send_output(ev: MessageEvent, sender, hikari: Hikari_Model):
     hikari = await output_hikari(hikari)
     data = hikari.Output.Data
@@ -130,20 +124,38 @@ def _build_select_list(type: int, select_data, max_size: int = 10):
     return data_list
 
 
+async def init_hikari_process(ev: MessageEvent, message: Message) -> Hikari_Model:
+    """从消息中提取第一个 @提及 的 openid（由频道/上游框架结构化传达，不做文本解析）"""
+    parts = []
+    platform_id = None
+    for seg in message:
+        if seg.type == 'mention_user':
+            if seg.data.get('is_bot', False):
+                continue
+            else:
+                parts.append("me")
+                platform_id = seg.data.get('user_id')
+        else:
+            parts.append(str(seg))
+    if platform_id is None:
+        platform_id = ev.get_user_id()
+    server_type = driver.config.platform
+    group_id = None
+    command_text = ''.join(parts).strip()
+    return await init_hikari_no_output(
+        platform=server_type,
+        PlatformId=str(platform_id),
+        command_text=command_text,
+        GroupId=group_id,
+    )
+
+
 @wws.handle()
 async def main(ev: MessageEvent, message: Message = CommandArg()):  # noqa: B008, PLR0915
     try:
         if not check_rule(ev):
             await wws.finish('该功能已禁用')
-        server_type = driver.config.platform
-        qq_id = ev.get_user_id()
-        group_id = None
-        hikari = await init_hikari_no_output(
-            platform=server_type,
-            PlatformId=str(qq_id),
-            command_text=str(message),
-            GroupId=group_id,
-        )
+        hikari = await init_hikari_process(ev, message)
         # ========== 状态判断 ==========
         if hikari.Status == 'success':
             await _send_output(ev, wws, hikari)
@@ -198,13 +210,3 @@ def web_run():
             if not file.is_file():
                 return JSONResponse(status_code=404, content={'detail': 'not found'})
             return FileResponse(file)
-
-
-@delete_image_cache.handle()
-async def delete_image(ev: MessageEvent):
-    try:
-        removed = _cleanup_old_images()
-        await delete_image_cache.send(f'清理完成，已删除 {removed} 个 1 小时前的图片')
-    except Exception:
-        logger.error(traceback.format_exc())
-        await delete_image_cache.send('清除缓存失败')
