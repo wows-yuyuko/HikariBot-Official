@@ -11,11 +11,11 @@ from nonebot.adapters.qq import (
 from nonebot.log import logger
 
 from hikari_bot.plugins.hikari_bot_qq_official.config import Config
-from hikari_bot.plugins.hikari_bot_qq_official.utils import check_rule
+from hikari_bot.plugins.hikari_bot_qq_official.utils import check_rule, is_text_or_at_message
 
 plugin_config = get_plugin_config(Config)
 
-bot_listen = on_message(priority=5, block=False)
+bot_listen = on_message(priority=5, block=False, rule=is_text_or_at_message)
 
 
 @dataclass
@@ -30,7 +30,6 @@ SelectProcess = defaultdict(SelectState)
 # 配置常量
 SELECT_TIMEOUT = 20  # 超时时间（秒）
 CHECK_INTERVAL = 0.5  # 检查间隔（秒）
-MAX_ATTEMPTS = int(SELECT_TIMEOUT / CHECK_INTERVAL)  # 最大尝试次数
 
 
 @bot_listen.handle()
@@ -71,9 +70,9 @@ async def change_select_state(ev: MessageEvent):
         logger.error(f"选择状态处理异常: {traceback.format_exc()}")
 
 
-async def wait_to_select(hikari):
-    """使用 asyncio.wait_for 实现超时控制"""
-    platform_id = hikari.UserInfo.PlatformId
+async def wait_to_select(hikari, selector_id: Optional[str] = None):
+    """使用 asyncio.wait_for 实现超时控制；选择状态以发起人（selector_id）为键"""
+    platform_id = selector_id or hikari.UserInfo.PlatformId
     select_data = hikari.Input.Select_Data or []
 
     # 同一用户已有进行中的选择流程时，拒绝并发，避免共享状态槽竞态

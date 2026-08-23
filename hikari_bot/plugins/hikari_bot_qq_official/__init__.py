@@ -21,5 +21,5 @@ __plugin_meta__ = PluginMetadata(
 
 config = get_plugin_config(Config)
 
-from .start import bot_get_random_pic, bot_pupu, delete_image_cache, main, wws
+from .start import main, wws
 from hikari_bot.plugins.hikari_bot_qq_official.select_state import bot_listen

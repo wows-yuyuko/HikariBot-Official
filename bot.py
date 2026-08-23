@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from pathlib import Path
-
 import nonebot
 from nonebot.adapters.qq import Adapter
 from nonebot.log import default_format, logger
@@ -11,8 +9,6 @@ app = nonebot.get_asgi()
 
 driver = nonebot.get_driver()
 driver.register_adapter(Adapter)
-config = nonebot.get_driver().config
-config.nb2_path = Path(__file__).parent
 
 logger.add(
     'logs/info.log',

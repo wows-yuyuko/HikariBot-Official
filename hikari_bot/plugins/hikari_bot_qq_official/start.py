@@ -125,23 +125,31 @@ def _build_select_list(type: int, select_data, max_size: int = 10):
 
 
 async def init_hikari_process(ev: MessageEvent, message: Message) -> Hikari_Model:
-    """从消息中提取第一个 @提及 的 openid（由频道/上游框架结构化传达，不做文本解析）"""
+    """处理 @提及 并初始化 Hikari 请求
+
+    - @到机器人：整段移除（提示机器人，不代表查询目标）
+    - @到其他用户：替换为文本 'me'，并将查询身份切换为被@用户（等价于其本人执行 me）
+    - 仅允许 @ 一个非机器人用户，多个直接返回错误
+    """
     parts = []
     platform_id = None
+    at_count = 0
     for seg in message:
         if seg.type == 'mention_user':
             if seg.data.get('is_bot', False):
                 continue
-            else:
-                parts.append("me")
-                platform_id = seg.data.get('user_id')
+            at_count += 1
+            if at_count > 1:
+                return Hikari_Model().error('仅允许@一个用户')
+            parts.append("me")
+            platform_id = seg.data.get('user_id')
         else:
             parts.append(str(seg))
     if platform_id is None:
         platform_id = ev.get_user_id()
     server_type = driver.config.platform
     group_id = None
-    command_text = ''.join(parts).strip()
+    command_text = ' '.join(p.strip() for p in parts if p.strip())
     return await init_hikari_no_output(
         platform=server_type,
         PlatformId=str(platform_id),
@@ -172,7 +180,7 @@ async def main(ev: MessageEvent, message: Message = CommandArg()):  # noqa: B008
                     await _send_output(ev, wws, hikari)
             else:
                 await _send_output(ev, wws, hikari)
-            hikari = await wait_to_select(hikari)
+            hikari = await wait_to_select(hikari, ev.get_user_id())
             if hikari.Status == 'error':
                 await wws.send(str(hikari.Output.Data))
                 return
