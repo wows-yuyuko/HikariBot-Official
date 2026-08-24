@@ -21,63 +21,14 @@ config = driver.config
 image_path = get_cache_file() / 'image_cache'
 
 
-def _safe_int(value, default=0):
-    """安全转换整数，解析失败时返回默认值"""
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return default
-
-
-def _check_guild_lists(ev, filter_rule, cfg):
-    """频道消息按白/黑名单过滤（白名单模式需命中任一白名单，黑名单模式需不命中任一黑名单）"""
-    guild_id = _safe_int(ev.guild_id)
-    channel_id = _safe_int(ev.channel_id)
-    if filter_rule == 'white':
-        return (
-            guild_id in getattr(cfg, 'white_guild_list', [])
-            or channel_id in getattr(cfg, 'white_channel_list', [])
-        )
-    if filter_rule == 'black':
-        return (
-            guild_id not in getattr(cfg, 'ban_guild_list', [])
-            and channel_id not in getattr(cfg, 'ban_channel_list', [])
-        )
-    logger.warning(f'未知过滤规则 filter_rule={filter_rule}，按拒绝处理')
-    return False
-
-
-def check_rule(ev):
-    cfg = driver.config
-    filter_rule = getattr(cfg, 'filter_rule', None)
-    if filter_rule in (None, 'None'):
-        return True
-
-    private = bool(getattr(cfg, 'private', True))
-
-    # 私聊类消息（c2c 私聊 / 频道私信）：由 private 开关控制
-    if isinstance(ev, C2CMessageCreateEvent):
-        return private
-    if isinstance(ev, DirectMessageCreateEvent):
-        return private or _check_guild_lists(ev, filter_rule, cfg)
-
-    # 群消息：黑名单模式按 ban_group_list 过滤（无群白名单配置，白名单模式默认放行）
-    if isinstance(ev, GroupMessageCreateEvent):
-        if filter_rule == 'black':
-            return _safe_int(ev.group_id) not in getattr(cfg, 'ban_group_list', [])
-        return True
-
-    # 频道消息：按白/黑名单过滤
-    if isinstance(ev, GuildMessageEvent):
-        return _check_guild_lists(ev, filter_rule, cfg)
-
-    logger.warning(f'未知消息类型，按放行处理: {type(ev).__name__}')
-    return True
-
-
 def is_text_or_at_message(ev: MessageEvent) -> bool:
     """仅当消息只含 纯文本 和 @提及 段时返回 True，其余（图片/表情/文件/@全体/@频道等）一律不处理"""
     return all(seg.type in ('text', 'mention_user') for seg in ev.get_message())
+
+
+def has_file_segment(ev: MessageEvent) -> bool:
+    """消息中是否包含 文件 段（收到的文件附件由适配器解析为 file 段）"""
+    return any(seg.type == 'file' for seg in ev.get_message())
 
 
 def get_message_event_type(ev: MessageEvent) -> str:

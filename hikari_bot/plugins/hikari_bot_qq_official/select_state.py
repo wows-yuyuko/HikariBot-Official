@@ -11,7 +11,7 @@ from nonebot.adapters.qq import (
 from nonebot.log import logger
 
 from hikari_bot.plugins.hikari_bot_qq_official.config import Config
-from hikari_bot.plugins.hikari_bot_qq_official.utils import check_rule, is_text_or_at_message
+from hikari_bot.plugins.hikari_bot_qq_official.utils import is_text_or_at_message
 
 plugin_config = get_plugin_config(Config)
 
@@ -36,9 +36,6 @@ CHECK_INTERVAL = 0.5  # 检查间隔（秒）
 async def change_select_state(ev: MessageEvent):
     """处理用户的选择输入"""
     try:
-        if not check_rule(ev):
-            return
-
         msg = str(ev.get_message()).strip()
         qq_id = str(ev.get_user_id())
 
