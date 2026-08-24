@@ -21,5 +21,10 @@ __plugin_meta__ = PluginMetadata(
 
 config = get_plugin_config(Config)
 
-from .start import main, wws
+# 启动配置与定时任务（set_hikari_config / 每日图片清理）
+from . import start  # noqa: F401
+# 本地图片服务器（on_startup 注册）
+from . import web  # noqa: F401
+# 机器人消息处理（wws 指令业务）
+from .bot import main, wws
 from hikari_bot.plugins.hikari_bot_qq_official.select_state import bot_listen
