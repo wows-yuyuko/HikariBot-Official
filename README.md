@@ -2,12 +2,19 @@
 
 ## 简介
 
-战舰世界水表BOT，基于Nonebot2，适配QQ官方机器人
-水表人，出击！wws me recent！！！  
+战舰世界水表BOT，基于Nonebot2，适配QQ官方机器人 水表人，出击！wws me recent！！！
 
 交流群: 967546463
 
 注意: QQ群的@处理只在全量消息的环境下生效
+
+## 文件消息处理
+
+机器人对文件处理使用外部插件的方式 模板在根目录的template里面的file_handler.py 改好后复制到hikari_bot.plugins.hikari_bot_qq_official.bot.file_listener文件夹下面 里面有个file.py文件放一起就行了 然后启动机器人 在控制台看见
+
+```file_handler脚本加载成功: file_handler.py```
+
+表示加载成功
 
 ## 克隆与依赖同步
 
@@ -28,10 +35,9 @@ git pull
 git submodule update --remote
 ```
 
-
 ## Linux 部署（Poetry 方案）
 
-> 以 Ubuntu / Debian 为例。部署使用 [Poetry](https://python-poetry.org/) 构建**完全隔离**的项目虚拟环境（生成在项目内 `.venv`），不污染系统 Python。本机有 Python 3.11/3.12 可直接使用；没有则脚本自动用 uv 下载隔离的 Python 3.11。
+> 以 Ubuntu / Debian 为例。部署使用 [Poetry](https://python-poetry.org/) 构建 **完全隔离**的项目虚拟环境（生成在项目内 `.venv`），不污染系统 Python。本机有 Python 3.11/3.12 可直接使用；没有则脚本自动用 uv 下载隔离的 Python 3.11。
 
 ### 1. 克隆代码（带 hikari_core 子模块）
 
@@ -49,9 +55,9 @@ cd HikariBot-Official
 
 脚本自动完成：
 
-1. 检查本机 Python（要求 `>=3.11,<3.13`）：符合要求则**询问**是否使用本机 Python 构建（默认是）；不符合或选否，则自动用 **uv 下载隔离的 Python 3.11**
+1. 检查本机 Python（要求 `>=3.11,<3.13`）：符合要求则 **询问**是否使用本机 Python 构建（默认是）；不符合或选否，则自动用 **uv 下载隔离的 Python 3.11**
 2. 初始化 `hikari_core` 子模块
-3. 安装 Poetry（若缺失，用**官方安装器**；不要用 apt 安装 Poetry，Debian 打包版默认关闭虚拟环境创建）
+3. 安装 Poetry（若缺失，用 **官方安装器**；不要用 apt 安装 Poetry，Debian 打包版默认关闭虚拟环境创建）
 4. 创建隔离环境 `.venv`，并按 `poetry.lock` **精确安装**依赖
 5. 安装 Playwright Chromium 及系统运行库、中文字体（需 sudo）
 6. 生成 `.env.prod`（若不存在）
@@ -120,10 +126,9 @@ poetry install                      # 依赖有变动时按 poetry.lock 同步
 - 中文字体显示异常：见下方「Ubuntu系统下部署字体不正常」一节
 - `ZoneInfoNotFoundError` / 鉴权失败：见「可能会遇到的问题」
 
-
 ## Windows 离线包（CI 自动构建）
 
-> 通过 GitHub Actions 自动打包：内置 Python 3.11 环境 + 全部依赖 + Chromium 浏览器，**免安装、可离线运行**（与 QQ 官方平台通信需联网）。
+> 通过 GitHub Actions 自动打包：内置 Python 3.11 环境 + 全部依赖 + Chromium 浏览器， **免安装、可离线运行**（与 QQ 官方平台通信需联网）。
 
 ### 获取
 
@@ -132,7 +137,7 @@ poetry install                      # 依赖有变动时按 poetry.lock 同步
 
 ### 使用
 
-1. 下载 `HikariBot-Windows.zip` 并解压（**解压后请勿移动整个文件夹**）
+1. 下载 `HikariBot-Windows.zip` 并解压（ **解压后请勿移动整个文件夹**）
 2. 复制 `.env.prod-example` 为 `.env.prod` 并填写（`QQ_BOTS` / `API_TOKEN` / `SUPERUSERS`）
 3. 双击 `start.bat` 启动（首次运行会自动初始化环境）
 
@@ -140,48 +145,51 @@ poetry install                      # 依赖有变动时按 poetry.lock 同步
 
 下载新版 zip，保留旧包中的 `accounts`、`data`、`.env.prod`，覆盖解压即可。
 
-
 ## 可能会遇到的问题
 
 ### 出现ZoneInfoNotFoundError报错
+
 >
 >您可以在[这里](https://github.com/nonebot/nonebot2/issues/78)找到相关解决办法
 >
+
 ### Recent和绑定提示'鉴权失败'
+
 1. 检查Token是否配置正确，token格式为`XXXXX:XXXXXX`
 2. 如果配置正确可能是Token失效了，请重新申请
 
+### Ubuntu系统下部署字体不正常 (针对一些云服务器的Ubuntu镜像，不保证成功，只是提供一个解决方案)
 
+1. 执行以下命令，完善字体库并将中文设置成默认语言（部分Ubuntu可能不需要该步骤，可直接从第二步开始）
 
-### Ubuntu系统下部署字体不正常(针对一些云服务器的Ubuntu镜像，不保证成功，只是提供一个解决方案)
-  1. 执行以下命令，完善字体库并将中文设置成默认语言（部分Ubuntu可能不需要该步骤，可直接从第二步开始）
   ```
   sudo apt install fonts-noto  
   sudo locale-gen zh_CN zh_CN.UTF-8  
   sudo update-locale LC_ALL=zh_CN.UTF-8 LANG=zh_CN.UTF-8  
   sudo fc-cache -fv
   ```
-  
-  2. 在你的Windows电脑上打开`C:\Windows\fonts`文件夹，找到里面的微软雅黑字体，将其复制出来，放在任意目录，应该会得到`msyh.ttc`，`mshybd.ttc`，`msyhl.ttc`三个文件。（不会有人还用Win7吧？）
 
-  3. 进入到`/usr/share/fonts`文件夹下，创建一个文件夹命名为`msyh`，然后进入其中
+2. 在你的Windows电脑上打开`C:\Windows\fonts`文件夹，找到里面的微软雅黑字体，将其复制出来，放在任意目录，应该会得到`msyh.ttc`，`mshybd.ttc`，`msyhl.ttc`三个文件。（不会有人还用Win7吧？）
+
+3. 进入到`/usr/share/fonts`文件夹下，创建一个文件夹命名为`msyh`，然后进入其中
+
   ```
   cd /usr/share/fonts 
   sudo mkdir msyh 
   cd msyh
   ```
-  
-  4. 将三个字体文件上传到`msyh`文件夹中(过程中遇到的问题请自行解决)
 
-  5. 执行以下命令（此时你应该是在`msyh`文件夹下），加载字体
+4. 将三个字体文件上传到`msyh`文件夹中 (过程中遇到的问题请自行解决)
+
+5. 执行以下命令（此时你应该是在`msyh`文件夹下），加载字体
+
   ```
   sudo mkfontscale 
   sudo mkfontdir 
   sudo fc-cache -fv
   ```
-  
-  6. （可选，若不正常可尝试）重启Hikari。
 
+6. （可选，若不正常可尝试）重启Hikari。
 
 ## 贡献代码
 
@@ -197,13 +205,14 @@ poetry install                      # 依赖有变动时按 poetry.lock 同步
 
 [Nonebot2](https://github.com/nonebot/nonebot2)  
 [go-cqhttp](https://github.com/Mrs4s/go-cqhttp)  
-[战舰世界API平台](https://wows.shinoaki.com/)  
+[战舰世界API平台](https://wows.shinoaki.com/)
 
 ## 开源相关
-MIT
-修改、分发代码时请保留原作者相关信息
+
+MIT 修改、分发代码时请保留原作者相关信息
 
 ## 赞助
+
 <p align="left">
   <a href="https://afdian.net/a/JustOneSummer?tab=home"><img src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/%E7%88%B1%E5%8F%91%E7%94%B5.png" alt="afdian" ></a>
 </p>
