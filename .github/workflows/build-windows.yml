@@ -39,53 +39,52 @@ jobs:
       - name: 安装项目依赖（自动从 pyproject.toml 读取）
         run: |
           micromamba run -p "$PWD/pyenv" python -m pip install -U pip
-          micromamba run -p "$PWD/pyenv" python -c "
-          import tomllib, subprocess, sys, re
-            with open('pyproject.toml', 'rb') as f:
-              deps = tomllib.load(f)['project']['dependencies']
-              print(f'📦 找到 {len(deps)} 个依赖包')
-              for i, dep in enumerate(deps, 1):
-                clean = re.sub(r'\s*(>=|<=|==|~=|!=|>|<)\s*', r'\1', dep)
-                print(f'[{i}/{len(deps)}] 安装: {clean}')
-                subprocess.check_call([sys.executable, '-m', 'pip', 'install', clean])"
-
       - name: 安装 Playwright Chromium
         env:
           PLAYWRIGHT_BROWSERS_PATH: '0'
         run: |
           micromamba run -p "$PWD/pyenv" python -m playwright install chromium
+          micromamba run -p "$PWD/pyenv" python << 'EOF'
+          import tomllib, subprocess, sys, re
+          with open('pyproject.toml', 'rb') as f:
+            deps = tomllib.load(f)['project']['dependencies']
+            print(f'📦 找到 {len(deps)} 个依赖包')
+            for i, dep in enumerate(deps, 1):
+              clean = re.sub(r'\s*(>=|<=|==|~=|!=|>|<)\s*', r'\1', dep)
+              print(f'[{i}/{len(deps)}] 安装: {clean}')
+              subprocess.check_call([sys.executable, '-m', 'pip', 'install', clean])
+          EOF
+      - name: conda-pack 打包环境
+        run: |
+          micromamba run -p "$PWD/pyenv" python -m pip install conda-pack
+          rm -f pyenv-packed.tar.gz
+          micromamba run -p "$PWD/pyenv" conda-pack -p "$PWD/pyenv" -o pyenv-packed.tar.gz
 
-- name: conda-pack 打包环境
-  run: |
-    micromamba run -p "$PWD/pyenv" python -m pip install conda-pack
-    rm -f pyenv-packed.tar.gz
-    micromamba run -p "$PWD/pyenv" conda-pack -p "$PWD/pyenv" -o pyenv-packed.tar.gz
+      - name: 组装离线包目录
+        run: |
+          mkdir -p dist/HikariBot-Windows/pyenv
+          cp -r hikari_bot hikari_core dist/HikariBot-Windows/
+          cp bot.py pyproject.toml poetry.lock README.md LICENSE .env.prod-example dist/HikariBot-Windows/ || true
+          tar -xzf pyenv-packed.tar.gz -C dist/HikariBot-Windows/pyenv
+          rm -rf dist/HikariBot-Windows/hikari_core/.git
+          rm -rf dist/HikariBot-Windows/pyenv/.cache dist/HikariBot-Windows/pyenv/pkgs
+          du -sh dist/HikariBot-Windows || echo "Size check skipped"
 
-- name: 组装离线包目录
-  run: |
-    mkdir -p dist/HikariBot-Windows/pyenv
-    cp -r hikari_bot hikari_core dist/HikariBot-Windows/
-    cp bot.py pyproject.toml poetry.lock README.md LICENSE .env.prod-example dist/HikariBot-Windows/ || true
-    tar -xzf pyenv-packed.tar.gz -C dist/HikariBot-Windows/pyenv
-    rm -rf dist/HikariBot-Windows/hikari_core/.git
-    rm -rf dist/HikariBot-Windows/pyenv/.cache dist/HikariBot-Windows/pyenv/pkgs
-    du -sh dist/HikariBot-Windows || echo "Size check skipped"
+      - name: 压缩为 zip
+        shell: pwsh
+        working-directory: dist
+        run: Compress-Archive -Path HikariBot-Windows -DestinationPath HikariBot-Windows.zip -Force
 
-- name: 压缩为 zip
-  shell: pwsh
-  working-directory: dist
-  run: Compress-Archive -Path HikariBot-Windows -DestinationPath HikariBot-Windows.zip -Force
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: HikariBot-Windows
+          path: dist/HikariBot-Windows.zip
+          if-no-files-found: error
 
-- name: 上传构建产物
-  uses: actions/upload-artifact@v4
-  with:
-    name: HikariBot-Windows
-    path: dist/HikariBot-Windows.zip
-    if-no-files-found: error
-
-- name: 发布到 GitHub Release
-  if: startsWith(github.ref, 'refs/tags/')
-  uses: softprops/action-gh-release@v2
-  with:
-    files: dist/HikariBot-Windows.zip
-    generate_release_notes: true
+      - name: 发布到 GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/HikariBot-Windows.zip
+          generate_release_notes: true
