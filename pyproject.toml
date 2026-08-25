@@ -1,6 +1,6 @@
 [project]
 name = "hikari-bot-official"
-version = "0.2.9"
+version = "0.3.0"
 description = "Nonebot2 HikariBot For QQ-Official,支持战舰世界水表查询"
 authors = [
     {name = "benx1n", email = "shirakamikanade@gmail.com"}
@@ -28,11 +28,6 @@ dependencies = [
 [project.urls]
 homepage = "https://github.com/benx1n/HikariBot-Official"
 repository = "https://github.com/benx1n/HikariBot-Official"
-
-[tool.poetry]
-packages = [
-    { include = "hikari_bot_qq_official", from = "hikari_bot/plugins"}
-]
 
 [tool.nonebot]
 plugin_dirs = ["hikari_bot/plugins"]
