@@ -70,10 +70,18 @@ jobs:
           rm -rf dist/HikariBot-Windows/pyenv/.cache dist/HikariBot-Windows/pyenv/pkgs
           du -sh dist/HikariBot-Windows || echo "Size check skipped"
 
-      - name: 压缩为 zip
-        shell: pwsh
-        working-directory: dist
-        run: Compress-Archive -Path HikariBot-Windows -DestinationPath HikariBot-Windows.zip -Force
+      - name: 压缩为 zip（使用 7zip）
+        run: |
+          echo "压缩前目录大小:"
+          du -sh dist/HikariBot-Windows || echo "du 不可用"
+
+          # 使用 7zip（Windows Runner 预装）
+          cd dist
+          7z a -tzip HikariBot-Windows.zip HikariBot-Windows/
+          cd ..
+
+          echo "压缩后文件大小:"
+          ls -lh dist/HikariBot-Windows.zip || dir dist\\HikariBot-Windows.zip
 
       - name: 上传构建产物
         uses: actions/upload-artifact@v4
