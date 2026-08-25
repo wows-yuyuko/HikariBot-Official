@@ -8,5 +8,5 @@ class Config(BaseModel):
     bot_select_msg_is_md: bool = False
     # 选择类消息最多展示的选择数量，默认 10
     bot_select_msg_is_md_max_size: int = 10
-    # 是否启用文件消息监听（私聊/群/频道收到文件附件时触发专门处理），默认启用
-    bot_enable_file_listen: bool = True
+    # 是否启用文件消息监听（私聊/群/频道收到文件附件时触发专门处理），默认不启用
+    bot_enable_file_listen: bool = False

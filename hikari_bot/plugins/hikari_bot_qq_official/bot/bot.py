@@ -29,9 +29,6 @@ driver = get_driver()
 
 wws = on_command('wws', block=False, aliases={'WWS'}, priority=10, rule=is_text_or_at_message)
 
-# 文件消息监听：私聊/群/频道消息中携带文件附件时触发
-file_listen = on_message(priority=5, block=False, rule=has_file_segment)
-
 
 async def _send_output(ev: MessageEvent, sender, hikari: Hikari_Model):
     """发送 Hikari 输出数据，自动处理 bytes（图片）和 str（文本）。"""
@@ -149,18 +146,3 @@ async def main(ev: MessageEvent, message: Message = CommandArg()):  # noqa: B008
             await wws.send('呜呜呜参数似乎有问题，请检查指令格式~')
         else:
             await wws.send('呜呜呜发生了错误，可能是网络问题，如果过段时间不能恢复请联系麻麻哦~')
-
-@file_listen.handle()
-async def handle_file_message(ev: MessageEvent):
-    """专门处理收到的文件消息（文件附件由适配器解析为 file 段，data 仅含 url）"""
-    if not plugin_config.bot_enable_file_listen:
-        return
-    try:
-        files = [seg for seg in ev.get_message() if seg.type == 'file']
-        for seg in files:
-            url = seg.data.get('url', '')
-            logger.info(f'收到文件 事件类型={get_message_event_type(ev)} 用户={ev.get_user_id()} url={url}')
-            # TODO: 文件业务处理（下载/转发/入库等）
-            await file_listen.send(f'收到文件：{url or "(无地址)"}')
-    except Exception:
-        logger.error(traceback.format_exc())
