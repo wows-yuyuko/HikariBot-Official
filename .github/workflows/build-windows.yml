@@ -43,7 +43,6 @@ jobs:
         env:
           PLAYWRIGHT_BROWSERS_PATH: '0'
         run: |
-          micromamba run -p "$PWD/pyenv" python -m playwright install chromium
           micromamba run -p "$PWD/pyenv" python << 'EOF'
           import tomllib, subprocess, sys, re
           with open('pyproject.toml', 'rb') as f:
@@ -54,6 +53,7 @@ jobs:
               print(f'[{i}/{len(deps)}] 安装: {clean}')
               subprocess.check_call([sys.executable, '-m', 'pip', 'install', clean])
           EOF
+          micromamba run -p "$PWD/pyenv" python -m playwright install chromium
       - name: conda-pack 打包环境
         run: |
           micromamba run -p "$PWD/pyenv" python -m pip install conda-pack
