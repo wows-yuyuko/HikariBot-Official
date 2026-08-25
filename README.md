@@ -12,6 +12,8 @@
 
 机器人对文件处理使用外部插件的方式 模板在根目录的template里面的file_handler.py 改好后复制到hikari_bot.plugins.hikari_bot_qq_official.bot.file_listener文件夹下面 里面有个file.py文件放一起就行了 然后启动机器人 在控制台看见
 
+插件一定要改成 ``file_handler.py`` 目前只认单个插件
+
 ```file_handler脚本加载成功: file_handler.py```
 
 表示加载成功
