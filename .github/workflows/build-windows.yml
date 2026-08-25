@@ -96,3 +96,8 @@ jobs:
         with:
           files: dist/HikariBot-Windows.zip
           generate_release_notes: true
+            # 手动触发时自动生成 tag
+          tag_name: manual-build-${{ github.run_number }}
+          name: Manual Build #${{ github.run_number }}
+          draft: false
+          prerelease: false
