@@ -39,7 +39,13 @@ jobs:
       - name: 安装项目依赖（非 editable，避免写入构建机绝对路径）
         run: |
           micromamba run -p "$PWD/pyenv" python -m pip install -U pip
-          micromamba run -p "$PWD/pyenv" python -m pip install .
+          micromamba run -p "$PWD/pyenv" python -c "
+          import tomllib, subprocess, sys, re
+          with open('pyproject.toml', 'rb') as f:
+            deps = tomllib.load(f)['project']['dependencies']
+            for dep in deps:
+              dep = re.sub(r'\s*(>=|<=|==|~=|!=|>|<)\s*', r'\1', dep)
+              subprocess.check_call([sys.executable, '-m', 'pip', 'install', dep])"
 
       - name: 安装 Playwright Chromium（打进包内，PLAYWRIGHT_BROWSERS_PATH=0）
         env:

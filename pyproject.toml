@@ -25,11 +25,6 @@ dependencies = [
     "nb-cli >=1.7.4"
 ]
 
-[tool.poetry]
-exclude = [
-    "hikari_bot/plugins/hikari_bot_official/**",
-]
-
 [project.urls]
 homepage = "https://github.com/benx1n/HikariBot-Official"
 repository = "https://github.com/benx1n/HikariBot-Official"
