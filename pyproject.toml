@@ -31,7 +31,7 @@ repository = "https://github.com/benx1n/HikariBot-Official"
 
 [tool.poetry]
 packages = [
-    { include = "hikari_bot_official", from = "hikari_bot/plugins"}
+    { include = "hikari_bot_qq_official", from = "hikari_bot/plugins"}
 ]
 
 [tool.nonebot]
