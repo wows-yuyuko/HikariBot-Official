@@ -1,12 +1,12 @@
 """机器人消息处理：wws 指令的完整业务（@处理、输出发送、选择流程）"""
 import traceback
 
-from nonebot import get_driver, get_plugin_config, on_command, on_message
+from nonebot import get_driver, get_plugin_config, on_command, Bot
 from nonebot.adapters.qq import (
     ActionFailed,
     Message,
-    MessageEvent,
-    MessageSegment, )
+    MessageSegment, MessageEvent, )
+from nonebot.internal.rule import Rule
 from nonebot.log import logger
 from nonebot.params import CommandArg
 
@@ -16,7 +16,6 @@ from hikari_bot.plugins.hikari_bot_qq_official.template import select_template
 from hikari_bot.plugins.hikari_bot_qq_official.utils import (
     byte2md5,
     get_message_event_type,
-    has_file_segment,
     is_text_or_at_message,
     upload_image,
 )
@@ -27,7 +26,7 @@ plugin_config = get_plugin_config(Config)
 
 driver = get_driver()
 
-wws = on_command('wws', block=False, aliases={'WWS'}, priority=10, rule=is_text_or_at_message)
+wws = on_command('wws', block=False, aliases={'WWS'}, priority=10, rule=Rule(is_text_or_at_message))
 
 
 async def _send_output(ev: MessageEvent, sender, hikari: Hikari_Model):
@@ -69,7 +68,7 @@ def _build_select_list(type: int, select_data, max_size: int = 10):
     return data_list
 
 
-async def init_hikari_process(ev: MessageEvent, message: Message) -> Hikari_Model:
+async def init_hikari_process(bot: Bot, ev: MessageEvent, message: Message) -> Hikari_Model:
     """处理 @提及 并初始化 Hikari 请求
 
     - @到机器人：整段移除（提示机器人，不代表查询目标）
@@ -100,16 +99,17 @@ async def init_hikari_process(ev: MessageEvent, message: Message) -> Hikari_Mode
     return await init_hikari_no_output(
         platform=server_type,
         PlatformId=str_platform_id,
+        BotId=bot.self_id,
         command_text=command_text,
         GroupId=group_id,
     )
 
 
 @wws.handle()
-async def main(ev: MessageEvent, message: Message = CommandArg()):  # noqa: B008, PLR0915
+async def main(ev: MessageEvent, bot: Bot, message: Message = CommandArg()):  # noqa: B008, PLR0915
     try:
         # logger.info(f'收到 wws 指令 事件类型={get_message_event_type(ev)} 用户={ev.get_user_id()}')
-        hikari = await init_hikari_process(ev, message)
+        hikari = await init_hikari_process(bot, ev, message)
         # ========== 状态判断 ==========
         if hikari.Status == 'success':
             await _send_output(ev, wws, hikari)
