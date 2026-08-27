@@ -64,7 +64,7 @@ jobs:
         run: |
           mkdir -p dist/HikariBot-Windows/pyenv
           cp -r hikari_bot hikari_core dist/HikariBot-Windows/
-          cp bot.py pyproject.toml poetry.lock README.md LICENSE .env.prod-example dist/HikariBot-Windows/ || true
+          cp bot.py start.bat pyproject.toml poetry.lock README.md LICENSE .env.prod-example dist/HikariBot-Windows/ || true
           tar -xzf pyenv-packed.tar.gz -C dist/HikariBot-Windows/pyenv
           rm -rf dist/HikariBot-Windows/hikari_core/.git
           rm -rf dist/HikariBot-Windows/pyenv/.cache dist/HikariBot-Windows/pyenv/pkgs
