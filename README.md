@@ -1,5 +1,3 @@
-<!-- markdownlint-disable MD033 MD041 -->
-
 ## 简介
 
 战舰世界水表BOT，基于Nonebot2，适配QQ官方机器人 水表人，出击！wws me recent！！！
@@ -209,8 +207,8 @@ poetry install                      # 依赖有变动时按 poetry.lock 同步
 
 感谢以下开发者及项目做出的贡献与支持
 
-<a href="https://github.com//benx1n/HikariBot/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=benx1n/HikariBot" />
+<a href="https://github.com/wows-yuyuko/HikariBot-Official/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=wows-yuyuko/HikariBot-Official" />
 </a>
 
 [Nonebot2](https://github.com/nonebot/nonebot2)  
@@ -223,6 +221,4 @@ MIT 修改、分发代码时请保留原作者相关信息
 
 ## 赞助
 
-<p align="left">
-  <a href="https://afdian.net/a/JustOneSummer?tab=home"><img src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/%E7%88%B1%E5%8F%91%E7%94%B5.png" alt="afdian" ></a>
-</p>
+<a href="https://afdian.net/a/JustOneSummer?tab=home"><img style="width: 100px; height: 100px;" src="/wows-yuyuko.png" alt="afdian" ></a>
