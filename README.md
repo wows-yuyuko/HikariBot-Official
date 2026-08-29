@@ -133,6 +133,8 @@ poetry install                      # 依赖有变动时按 poetry.lock 同步
 
 - 中文字体显示异常：见下方「Ubuntu系统下部署字体不正常」一节
 - `ZoneInfoNotFoundError` / 鉴权失败：见「可能会遇到的问题」
+- 机器人群里发送非@指令没响应 请在手机QQ端点击机器人资料设置全量消息获取 (仅群主可以设置)
+- webhook机器人收不到部分小消息 请在https://q.qq.com/qqbot/dashboard选择你的机器人,开发设置 webhook设置下面的消息推送选择全部推送
 
 ## Windows 离线包（CI 自动构建）
 
