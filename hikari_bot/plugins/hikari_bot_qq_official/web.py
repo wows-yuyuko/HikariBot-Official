@@ -17,7 +17,7 @@ def web_run():
     if get_driver().config.upload_image == 'local':
         app: FastAPI = nonebot.get_app()
         image_path.mkdir(parents=True, exist_ok=True)
-        logger.success(f'本地文件服务器启动成功 path={image_path}，请确认是否放行对应端口，如果没有公网ip请将配置项UPLOAD_IMAGE改为smms或oss')
+        logger.success(f'本地文件服务器启动成功 path={image_path}，请确认是否放行对应端口，如果没有公网ip请将配置项UPLOAD_IMAGE改为qq、smms或oss')
 
         @app.get('/images/{filename}')
         async def get_file(filename: str):

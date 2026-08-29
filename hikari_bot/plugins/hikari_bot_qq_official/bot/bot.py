@@ -34,7 +34,8 @@ async def _send_output(ev: MessageEvent, sender, hikari: Hikari_Model):
     hikari = await output_hikari(hikari)
     data = hikari.Output.Data
     if isinstance(data, bytes):
-        if get_message_event_type(ev) in ('CHANNEL', 'CHANNEL_DIRECT'):
+        # 频道 / 配置 UPLOAD_IMAGE=qq（QQ官方服务器上传）：走富媒体直发，无需公网 IP 与图床
+        if get_message_event_type(ev) in ('CHANNEL', 'CHANNEL_DIRECT') or driver.config.upload_image == 'qq':
             await sender.send(MessageSegment.file_image(data))
         else:
             url = await upload_image(data)
