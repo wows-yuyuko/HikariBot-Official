@@ -3,8 +3,10 @@
 战舰世界水表BOT，基于Nonebot2，适配QQ官方机器人 水表人，出击！wws me recent！！！
 
 交流群: 967546463
-
-注意: QQ群的@处理只在全量消息的环境下生效
+- 注意: QQ群的@处理只在全量消息的环境下生效
+- 首次使用会自动下载 playwright chromium 浏览器（用于模板渲染截图）
+- 建议在2G或以上内存的机器上部署 低于2G的在渲染大量数据时容易崩溃
+- 本地部署推荐websocket模式 云服务器推荐webhook 具体使用参考QQ机器人官方文档
 
 ## 文件消息处理
 
@@ -38,7 +40,7 @@ git config submodule.recurse true
 git pull
 
 # 或将子模块手动更新到远端最新提交
-git submodule update --remote
+git submodule update --remote --force
 ```
 
 ## Linux 部署（Poetry 方案）
