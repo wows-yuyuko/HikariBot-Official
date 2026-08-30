@@ -82,7 +82,7 @@ vi .env.prod
 
 必填项：
 
-- `QQ_BOTS` 中的 `id` / `token` / `secret`：QQ 官方机器人凭证
+- `QQ_BOTS` 中的 `id` / `token` / `secret`：QQ 官方机器人凭证(`token`在新版本bot已经过时了 可以不填)
 - `API_TOKEN`：战舰世界 API 平台 token（格式 `数字:字符串`）
 - `SUPERUSERS`：你的 QQ 号
 - `HOST` / `PORT`：默认 `0.0.0.0:9999`，云服务器需在安全组放行对应端口
