@@ -12,6 +12,7 @@ from nonebot.log import logger
 
 from hikari_bot.plugins.hikari_bot_qq_official.config import Config
 from hikari_bot.plugins.hikari_bot_qq_official.utils import is_text_or_at_message
+from hikari_core.core.admin import verify_and_add_admin
 
 plugin_config = get_plugin_config(Config)
 
@@ -38,7 +39,10 @@ async def change_select_state(ev: MessageEvent):
     try:
         msg = str(ev.get_message()).strip()
         qq_id = str(ev.get_user_id())
-
+        verify = verify_and_add_admin(qq_id, msg)
+        if verify == 1:
+            await bot_listen.send("管理员信息添加成功")
+            return
         # 获取当前状态
         current_state = SelectProcess.get(qq_id)
         if not current_state or not current_state.state:
