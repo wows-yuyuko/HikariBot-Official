@@ -109,7 +109,6 @@ async def init_hikari_process(bot: Bot, ev: MessageEvent, message: Message) -> H
 @wws.handle()
 async def main(ev: MessageEvent, bot: Bot, message: Message = CommandArg()):  # noqa: B008, PLR0915
     try:
-        # logger.info(f'收到 wws 指令 事件类型={get_message_event_type(ev)} 用户={ev.get_user_id()}')
         hikari = await init_hikari_process(bot, ev, message)
         # ========== 状态判断 ==========
         if hikari.Status == 'success':
