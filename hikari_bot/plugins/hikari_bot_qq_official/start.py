@@ -3,12 +3,14 @@ import time
 from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from nonebot import get_driver
+from nonebot import get_driver, get_plugin_config
+from hikari_bot.plugins.hikari_bot_qq_official.config import Config
 from nonebot.log import logger
 
 from hikari_bot.plugins.hikari_bot_qq_official.utils import image_path
 from hikari_core import get_cache_file, set_hikari_config
 
+plugin_config = get_plugin_config(Config)
 driver = get_driver()
 
 _proxy = None
@@ -22,6 +24,7 @@ set_hikari_config(
     token=driver.config.api_token,
     game_path=str(get_cache_file()),
     image_type='webp',
+    Authorization=plugin_config.bot_authorization,
     save_template_html=False
 )
 
