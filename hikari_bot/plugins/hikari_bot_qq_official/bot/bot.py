@@ -93,10 +93,19 @@ async def init_hikari_process(bot: Bot, ev: MessageEvent, message: Message) -> H
     if platform_id is None:
         platform_id = ev.get_user_id()
     server_type = driver.config.platform
-    group_id = None
     command_text = ' '.join(p.strip() for p in parts if p.strip())
     str_platform_id = str(platform_id)
-    logger.success(f'init_hikari 传递参数 platform={server_type} PlatformId={str_platform_id} 命令={command_text}')
+
+    # 私信 / 群聊场景判断：群聊（群@机器人、群普通消息）需要给 GroupId 赋值，供分群功能使用
+    event_type = get_message_event_type(ev)
+    if event_type in ('GROUP_AT', 'GROUP'):
+        group_id = getattr(ev, 'group_openid', None) or getattr(ev, 'group_id', None)
+        scene = '群聊'
+    else:
+        group_id = None
+        scene = '私信' if event_type in ('C2C', 'CHANNEL_DIRECT') else '频道'
+
+    logger.success(f'init_hikari 场景={scene} 传递参数 platform={server_type} PlatformId={str_platform_id} GroupId={group_id} 命令={command_text}')
     return await init_hikari_no_output(
         platform=server_type,
         PlatformId=str_platform_id,
