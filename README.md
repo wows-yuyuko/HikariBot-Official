@@ -138,7 +138,7 @@ uv sync                             # 依赖有变动时按 uv.lock 同步
 
 ## Windows 离线包（CI 自动构建）
 
-> 通过 GitHub Actions 自动打包：内置 Python 3.11 环境 + 全部依赖 + Chromium 浏览器， **免安装、可离线运行**（与 QQ 官方平台通信需联网）。
+> 通过 GitHub Actions 自动打包：内置 uv + 托管 Python 3.11 + 依赖缓存 + Chromium 浏览器， **免安装、可离线运行**（与 QQ 官方平台通信需联网）。
 
 ### 获取
 
@@ -149,7 +149,20 @@ uv sync                             # 依赖有变动时按 uv.lock 同步
 
 1. 下载 `HikariBot-Windows.zip` 并解压（ **解压后请勿移动整个文件夹**）
 2. 复制 `.env.prod-example` 为 `.env.prod` 并填写（`QQ_BOTS` / `API_TOKEN` / `SUPERUSERS`）
-3. 双击 `start.bat` 启动（首次运行会自动初始化环境）
+3. 双击 `start.bat` 启动（首次运行会用包内 uv 纯离线创建 `.venv`，无需联网、无需预先安装 Python）
+
+### 包内结构与启动原理
+
+| 目录 / 文件 | 作用 |
+| --- | --- |
+| `uv.exe` | uv 可执行文件，负责建环境和跑命令 |
+| `uv-python/` | 托管 Python 3.11（可迁移的独立解释器） |
+| `uv-cache/` | 全部依赖的 wheel 缓存，离线安装的来源 |
+| `ms-playwright/` | Chromium 浏览器（模板渲染截图用） |
+
+`start.bat` 把 `UV_PYTHON_INSTALL_DIR` / `UV_CACHE_DIR` / `PLAYWRIGHT_BROWSERS_PATH` 指向上述目录，
+并设置 `UV_PYTHON_PREFERENCE=only-managed` 保证只用包内 Python；随后执行 `uv sync --offline` 建立 `.venv`，
+再以 `uv run --no-sync nb run` 启动。离线初始化失败时会自动回退到联网安装。
 
 ### 更新
 

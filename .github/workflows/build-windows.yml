@@ -13,6 +13,11 @@ jobs:
     defaults:
       run:
         shell: bash
+    env:
+      # 这三个目录都会随包分发，用户机器上由 start.bat 指回包内路径
+      UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/uv-python
+      UV_CACHE_DIR: ${{ github.workspace }}/uv-cache
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/ms-playwright
 
     steps:
       - name: 检出代码（含 hikari_core 子模块）
@@ -21,62 +26,46 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - name: 安装 micromamba
+      - name: 安装 uv
+        shell: pwsh
         run: |
-          mkdir -p "$HOME/micromamba-bin"
-          curl -LsSf https://micro.mamba.pm/api/micromamba/win-64/latest -o /tmp/mm.tar.bz2
-          tar -xjf /tmp/mm.tar.bz2 -C "$HOME/micromamba-bin"
-          MMB="$(find "$HOME/micromamba-bin" -name micromamba.exe | head -n1)"
-          export PATH="$(dirname "$MMB"):$PATH"
-          echo "$(dirname "$MMB")" >> "$GITHUB_PATH"
-          micromamba --version
+          irm https://astral.sh/uv/install.ps1 | iex
+          "$env:USERPROFILE\.local\bin\uv.exe" --version
 
-      - name: 创建隔离 Python 3.11 环境
+      - name: 下载托管 Python 3.11（随包分发）
         run: |
-          micromamba create -p "$PWD/pyenv" python=3.11 -c conda-forge -y
-          micromamba run -p "$PWD/pyenv" python -V
+          export PATH="$HOME/.local/bin:$PATH"
+          uv python install 3.11
+          uv python find 3.11
 
-      - name: 安装 uv（仅构建期使用，打包前卸载）
+      - name: 解析依赖并同步构建环境
         run: |
-          micromamba run -p "$PWD/pyenv" python -m pip install -U uv
-          micromamba run -p "$PWD/pyenv" uv --version
+          export PATH="$HOME/.local/bin:$PATH"
+          # 仓库不提交 uv.lock，这里现场解析（同时生成 uv.lock 供随包分发）
+          uv lock
+          # 同步产物会同时把 wheel 落进 UV_CACHE_DIR，供用户机器离线安装
+          uv sync --python 3.11
+          echo "依赖条数: $(uv export --no-emit-project --no-hashes -o - | grep -c '==')"
 
-      - name: 解析依赖并导出清单
+      - name: 安装 Playwright Chromium（随包分发）
         run: |
-          # 仓库不提交 uv.lock，这里现场解析并导出干净的依赖清单（同时会在构建目录生成 uv.lock）
-          micromamba run -p "$PWD/pyenv" uv lock
-          micromamba run -p "$PWD/pyenv" uv export --no-emit-project --no-hashes -o requirements.txt
-          echo "导出依赖条数: $(grep -c '==' requirements.txt)"
-
-      - name: 安装项目依赖到 pyenv
-        run: |
-          micromamba run -p "$PWD/pyenv" uv pip install \
-            --python "$PWD/pyenv/python.exe" \
-            --default-index https://pypi.org/simple/ \
-            -r requirements.txt
-          rm -f requirements.txt
-
-      - name: 安装 Playwright Chromium
-        env:
-          PLAYWRIGHT_BROWSERS_PATH: '0'
-        run: |
-          micromamba run -p "$PWD/pyenv" python -m playwright install chromium
-      - name: conda-pack 打包环境
-        run: |
-          micromamba run -p "$PWD/pyenv" python -m pip uninstall -y uv
-          micromamba run -p "$PWD/pyenv" python -m pip install conda-pack
-          rm -f pyenv-packed.tar.gz
-          micromamba run -p "$PWD/pyenv" conda-pack -p "$PWD/pyenv" -o pyenv-packed.tar.gz
+          export PATH="$HOME/.local/bin:$PATH"
+          uv run --no-sync playwright install chromium
 
       - name: 组装离线包目录
         run: |
-          mkdir -p dist/HikariBot-Windows/pyenv
-          cp -r hikari_bot hikari_core dist/HikariBot-Windows/
-          cp bot.py start.bat pyproject.toml README.md LICENSE .env.prod-example dist/HikariBot-Windows/ || true
-          tar -xzf pyenv-packed.tar.gz -C dist/HikariBot-Windows/pyenv
-          rm -rf dist/HikariBot-Windows/hikari_core/.git
-          rm -rf dist/HikariBot-Windows/pyenv/.cache dist/HikariBot-Windows/pyenv/pkgs
-          du -sh dist/HikariBot-Windows || echo "Size check skipped"
+          PKG=dist/HikariBot-Windows
+          rm -rf dist
+          mkdir -p "$PKG"
+          cp -r hikari_bot hikari_core "$PKG/"
+          cp bot.py start.bat pyproject.toml uv.lock README.md LICENSE .env.prod-example "$PKG/" || true
+          # 随包分发 uv 可执行文件 + 托管 Python + 依赖缓存 + Chromium
+          cp "$HOME/.local/bin/uv.exe" "$PKG/"
+          cp -r uv-python uv-cache ms-playwright "$PKG/"
+          # .venv 不打包：由用户在首次启动时离线创建，避免打包绝对路径失效
+          rm -rf "$PKG/hikari_core/.git"
+          echo "构建产物体积:"
+          du -sh "$PKG" || echo "Size check skipped"
 
       - name: 压缩为 zip（使用 7zip）
         run: |
