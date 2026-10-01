@@ -4,15 +4,11 @@ from pathlib import Path
 from typing import Optional, Any, Callable
 
 from nonebot import get_driver, get_plugin_config, on_message
-from nonebot.adapters.qq import (
-    MessageEvent, )
 from nonebot.internal.matcher import Matcher
 from nonebot.log import logger
 
+from hikari_bot.plugins.hikari_bot_qq_official.adapters import MessageEvent, has_file_segment
 from hikari_bot.plugins.hikari_bot_qq_official.config import Config
-from hikari_bot.plugins.hikari_bot_qq_official.utils import (
-    has_file_segment, get_message_event_type
-)
 
 plugin_config = get_plugin_config(Config)
 

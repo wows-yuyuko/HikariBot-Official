@@ -1,4 +1,8 @@
-from nonebot.adapters.qq import MessageSegment
+"""选择类消息的 markdown 文本构建。
+
+只产出 markdown **文本**，具体包装成哪种消息段由 adapters 层决定
+（QQ 官方有 markdown 段，OneBot 没有，届时由适配层降级）。
+"""
 from pydantic import BaseModel
 
 from hikari_core.core.constants import shiptypes
@@ -25,7 +29,7 @@ class SelectClan(BaseModel):
     name: str = ""
 
 
-def get_ship_markdown(data_list: list[SelectShip]) -> MessageSegment:
+def get_ship_markdown(data_list: list[SelectShip]) -> str:
     table_rows = "\n".join([
         f"| {club.index} | {_md_escape(club.level_str)} {_md_escape(match_ship_type(club.ship_type))} | {_md_escape(club.name_cn)} | {_md_escape(club.name_cn360)} | {_md_escape(club.name_en)} |"
         for club in data_list
@@ -40,10 +44,10 @@ def get_ship_markdown(data_list: list[SelectShip]) -> MessageSegment:
 
 ---
 """
-    return MessageSegment.markdown(markdown_content)
+    return markdown_content
 
 
-def get_clan_markdown(data_list: list[SelectClan]) -> MessageSegment:
+def get_clan_markdown(data_list: list[SelectClan]) -> str:
     table_rows = "\n".join([
         f"| {club.index} | {_md_escape(club.tag)} | {_md_escape(club.name)} |"
         for club in data_list
@@ -58,7 +62,7 @@ def get_clan_markdown(data_list: list[SelectClan]) -> MessageSegment:
 
 ---
 """
-    return MessageSegment.markdown(markdown_content)
+    return markdown_content
 
 
 def match_ship_type(value: str) -> str:

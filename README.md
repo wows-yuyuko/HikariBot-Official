@@ -8,6 +8,33 @@
 - 建议在2G或以上内存的机器上部署 低于2G的在渲染大量数据时容易崩溃
 - 本地部署推荐websocket模式 云服务器推荐webhook 具体使用参考QQ机器人官方文档
 
+## 适配器选择（BOT_ADAPTER）
+
+同一进程**只运行一个适配器**，在 `.env.prod` 里二选一：
+
+| BOT_ADAPTER | 说明 | 上报给 API 的平台标识 |
+| --- | --- | --- |
+| `qq_official`（默认） | QQ 官方机器人 | `QQ_OFFICIAL` |
+| `onebot11` | OneBot V11，仅 WebSocket 接入（正/反均可） | `QQ` |
+
+- 业务代码不直接依赖任何具体适配器 —— 事件分类、@ 解析、发图方式、markdown 能力统一经
+  `hikari_bot/plugins/hikari_bot_qq_official/adapters/` 适配层，新增适配器只需在该层实现一组同名接口。
+
+### OneBot V11 接入
+
+只支持 WebSocket，两个方向任选（也可同时开启）：
+
+| 方向 | 谁主动连接 | 怎么配 |
+| --- | --- | --- |
+| 反向 WS（推荐） | 实现端连机器人 | 无需额外配置。端点 `ws://<本机IP>:<PORT>/onebot/v11/ws`，实现端需带 `X-Self-ID` 头 |
+| 正向 WS | 机器人连实现端 | `ONEBOT_WS_URLS = ["ws://127.0.0.1:3001"]`（JSON 数组写法，可多个） |
+
+- 鉴权用 `ONEBOT_ACCESS_TOKEN`，需与实现端一致；留空表示不校验。
+- 两个方向依赖 driver 能力：反向需 ASGI、正向需 WebSocketClient。本项目默认的
+  `DRIVER=~fastapi+~httpx+~websockets` 已同时满足；若只留 `~fastapi`，正向 WS 会被忽略并在启动日志里告警。
+
+> 已知限制：V11 协议没有定义「收到文件」的消息段，`BOT_ENABLE_FILE_LISTEN` 能否生效取决于实现端是否下发 `file` 段。
+
 ## 文件消息处理
 
 机器人对文件处理使用外部插件的方式 模板在根目录的template里面的file_handler.py 改好后复制到hikari_bot.plugins.hikari_bot_qq_official.bot.file_listener文件夹下面 里面有个file.py文件放一起就行了 然后启动机器人 在控制台看见

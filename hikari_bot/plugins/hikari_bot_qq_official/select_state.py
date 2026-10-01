@@ -5,13 +5,10 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 from nonebot import get_plugin_config, on_message
-from nonebot.adapters.qq import (
-    MessageEvent,
-)
 from nonebot.log import logger
 
+from hikari_bot.plugins.hikari_bot_qq_official.adapters import MessageEvent, is_text_or_at_message
 from hikari_bot.plugins.hikari_bot_qq_official.config import Config
-from hikari_bot.plugins.hikari_bot_qq_official.utils import is_text_or_at_message
 from hikari_core.core.admin import verify_and_add_admin
 
 plugin_config = get_plugin_config(Config)
