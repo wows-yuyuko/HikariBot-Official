@@ -30,7 +30,11 @@ jobs:
         shell: pwsh
         run: |
           irm https://astral.sh/uv/install.ps1 | iex
-          "$env:USERPROFILE\.local\bin\uv.exe" --version
+          # 注意：PowerShell 里以引号开头的路径会被解析成「字符串表达式」而不是命令，
+          # 直接写 "$path" --version 会报 Unexpected token，必须用调用运算符 &
+          $uv = Join-Path $env:USERPROFILE '.local\bin\uv.exe'
+          & $uv --version
+          Write-Output "uv 安装路径: $(Split-Path $uv)"
 
       - name: 下载托管 Python 3.11（随包分发）
         run: |
@@ -45,7 +49,7 @@ jobs:
           uv lock
           # 同步产物会同时把 wheel 落进 UV_CACHE_DIR，供用户机器离线安装
           uv sync --python 3.11
-          echo "依赖条数: $(uv export --no-emit-project --no-hashes -o - | grep -c '==')"
+          echo "依赖条数: $(uv export --no-emit-project --no-hashes | grep -c '==')"
 
       - name: 安装 Playwright Chromium（随包分发）
         run: |
