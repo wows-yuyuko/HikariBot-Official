@@ -43,9 +43,9 @@ git pull
 git submodule update --remote --force
 ```
 
-## Linux 部署（Poetry 方案）
+## Linux 部署（uv 方案）
 
-> 以 Ubuntu / Debian 为例。部署使用 [Poetry](https://python-poetry.org/) 构建 **完全隔离**的项目虚拟环境（生成在项目内 `.venv`），不污染系统 Python。本机有 Python 3.11/3.12 可直接使用；没有则脚本自动用 uv 下载隔离的 Python 3.11。
+> 以 Ubuntu / Debian 为例。部署使用 [uv](https://docs.astral.sh/uv/) 在项目内创建 **完全隔离** 的虚拟环境（生成在项目内 `.venv`），不污染系统 Python。依赖由 uv 解析安装（锁文件 `uv.lock` 未纳入版本控制，首次部署时生成）。本机有 Python 3.11/3.12 可直接使用；没有则脚本自动用 uv 下载隔离的 Python 3.11。
 
 ### 1. 克隆代码（带 hikari_core 子模块）
 
@@ -65,12 +65,12 @@ cd HikariBot-Official
 
 1. 检查本机 Python（要求 `>=3.11,<3.13`）：符合要求则 **询问**是否使用本机 Python 构建（默认是）；不符合或选否，则自动用 **uv 下载隔离的 Python 3.11**
 2. 初始化 `hikari_core` 子模块
-3. 安装 Poetry（若缺失，用 **官方安装器**；不要用 apt 安装 Poetry，Debian 打包版默认关闭虚拟环境创建）
-4. 创建隔离环境 `.venv`，并按 `poetry.lock` **精确安装**依赖
+3. 安装 uv（若缺失，优先国内镜像 `uv.agentsmirror.com`，失败回退官方安装器）
+4. 在项目内创建隔离环境 `.venv`，并安装依赖（`uv.lock` 缺失时现场解析并生成，之后复用）
 5. 安装 Playwright Chromium 及系统运行库、中文字体（需 sudo）
 6. 生成 `.env.prod`（若不存在）
 
-> 若 `poetry install` 报 `ensurepip` 相关错误，先执行 `sudo apt install -y python3.11-venv` 再重跑。
+> 锁文件 `uv.lock` 未纳入版本控制：首次部署会解析依赖并落盘，之后 `uv sync` 会复用它，仅当 `pyproject.toml` 改动时才重新解析。若想强制按现有锁文件安装（不改动锁文件），改用 `uv sync --frozen`。
 
 > 国内加速：uv 本体安装优先走国内镜像 `uv.agentsmirror.com`（失败自动回退官方源）；uv 下载 Python 默认走南京大学 `mirror.nju.edu.cn` 的 github-release 镜像。如需更换 Python 镜像，先 `export UV_PYTHON_INSTALL_MIRROR=<镜像地址>` 再运行 `./deploy.sh`（脚本会尊重你的设置）。
 
@@ -96,7 +96,7 @@ vi .env.prod
 ./service.sh stop      # 停止
 ```
 
-- 进程后台运行（通过 `nb run` 启动，即 `poetry run nb run`），标准输出/错误日志写入 `logs/bot.log`（机器人自身日志在 `logs/info.log`）
+- 进程后台运行（通过 `nb run` 启动，即 `uv run --no-sync nb run`），标准输出/错误日志写入 `logs/bot.log`（机器人自身日志在 `logs/info.log`）
 - 生产环境建议用 systemd 托管（可选）：
 
 ```ini
@@ -125,7 +125,7 @@ sudo systemctl enable --now hikaribot
 git config submodule.recurse true   # 配置一次，之后 git pull 会顺带更新子模块
 git pull
 git submodule update --remote       # 手动将 hikari_core 更新到远端最新
-poetry install                      # 依赖有变动时按 poetry.lock 同步
+uv sync                             # 依赖有变动时按 uv.lock 同步
 ./service.sh restart                # 重启生效
 ```
 

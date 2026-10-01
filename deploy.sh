@@ -1,19 +1,21 @@
 #!/bin/bash
 # ============================================================
-# HikariBot Linux 一键部署脚本（Poetry 方案）
+# HikariBot Linux 一键部署脚本（uv 方案）
 # 用法: ./deploy.sh
 # 说明:
 #   1. 检测本机 Python（要求 >=3.11,<3.13）：
 #      - 符合要求 -> 询问是否使用本机 Python 构建（默认是）
 #      - 不符合 / 用户选择不用 -> 自动用 uv 下载隔离 Python 3.11
-#   2. 使用 Poetry 构建完全隔离的项目虚拟环境（.venv），
-#      不污染系统 Python。请勿使用 apt 安装 Poetry（其默认
-#      不创建虚拟环境），脚本会使用官方安装器。
+#   2. 使用 uv 在项目内创建完全隔离的虚拟环境（.venv），
+#      并严格按 uv.lock 安装依赖，不污染系统 Python。
 #   需要 sudo 权限（安装系统依赖、中文字体）
 # ============================================================
 set -e
 
 cd "$(dirname "$0")"
+
+# uv / 用户级脚本默认安装位置
+export PATH="$HOME/.local/bin:$PATH"
 
 echo "==> [1/6] 检查本机 Python 环境"
 PYTHON=""
@@ -41,46 +43,49 @@ if [ -n "$PYTHON" ]; then
     fi
 fi
 
-if [ -z "$PYTHON" ]; then
-    echo "    未检测到符合要求的本机 Python（>=3.11,<3.13），使用 uv 下载隔离 Python 3.11..."
-    if ! command -v uv >/dev/null 2>&1; then
-        echo "    安装 uv（优先国内镜像 uv.agentsmirror.com，失败则回退官方源）..."
-        if curl -LsSf https://uv.agentsmirror.com/install-cn.sh -o /tmp/uv-install-cn.sh 2>/dev/null && sh /tmp/uv-install-cn.sh; then
-            echo "    uv 安装成功（国内镜像）"
-        else
-            echo "    国内镜像不可用，回退官方安装器..."
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-        fi
-        rm -f /tmp/uv-install-cn.sh
-        export PATH="$HOME/.local/bin:$PATH"
+if [ -n "$PYTHON" ]; then
+    echo "    将使用解释器: $($PYTHON --version)"
+else
+    echo "    未检测到符合要求的本机 Python（>=3.11,<3.13），将由 uv 下载隔离的 Python 3.11"
+fi
+
+echo "==> [2/6] 初始化 git 子模块 hikari_core"
+git submodule update --init --recursive
+
+echo "==> [3/6] 安装 uv（如缺失）"
+if ! command -v uv >/dev/null 2>&1; then
+    echo "    未检测到 uv，优先使用国内镜像安装（uv.agentsmirror.com）..."
+    if curl -LsSf https://uv.agentsmirror.com/install-cn.sh -o /tmp/uv-install-cn.sh 2>/dev/null && sh /tmp/uv-install-cn.sh; then
+        echo "    uv 安装成功（国内镜像）"
+    else
+        echo "    国内镜像不可用，回退官方安装器..."
+        curl -LsSf https://astral.sh/uv/install.sh | sh
     fi
+    rm -f /tmp/uv-install-cn.sh
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+uv --version
+
+echo "==> [4/6] 创建隔离环境并安装依赖"
+if [ -z "$PYTHON" ]; then
     # uv 下载 Python 默认走国内镜像（南京大学 github-release 镜像，稳定可靠）；
     # 如需更换，可先 export UV_PYTHON_INSTALL_MIRROR=<镜像地址> 再执行本脚本，此处会尊重你的设置
     export UV_PYTHON_INSTALL_MIRROR="${UV_PYTHON_INSTALL_MIRROR:-https://mirror.nju.edu.cn/github-release/astral-sh/python-build-standalone}"
     uv python install 3.11
     PYTHON="$(uv python find 3.11)"
+    echo "    uv 已准备解释器: $($PYTHON --version)"
 fi
-echo "    使用解释器: $($PYTHON --version)"
-
-echo "==> [2/6] 初始化 git 子模块 hikari_core"
-git submodule update --init --recursive
-
-echo "==> [3/6] 安装 Poetry（如缺失）"
-if ! command -v poetry >/dev/null 2>&1; then
-    echo "    未检测到 Poetry，使用官方安装器..."
-    curl -sSL https://install.python-poetry.org | "$PYTHON" -
-    export PATH="$HOME/.local/bin:$PATH"
-fi
-poetry --version
-
-echo "==> [4/6] 创建隔离环境并安装依赖（按 poetry.lock）"
-poetry config virtualenvs.in-project true --local || true
-poetry env use "$PYTHON"
-poetry install
+# uv 默认在项目根目录创建 .venv。
+# 本仓库不提交 uv.lock：缺失时 uv sync 会现场解析依赖并生成锁文件，
+# 已存在时按该锁文件安装，且仅当 pyproject.toml 有改动才会重新解析。
+uv sync --python "$PYTHON"
 
 echo "==> [5/6] 安装 Playwright Chromium 及系统依赖"
-poetry run playwright install chromium
-PLAYWRIGHT_BIN="$(poetry run which playwright)"
+uv run --no-sync playwright install chromium
+PLAYWRIGHT_BIN="$(uv run --no-sync which playwright 2>/dev/null || true)"
+if [ -z "$PLAYWRIGHT_BIN" ]; then
+    PLAYWRIGHT_BIN="$PWD/.venv/bin/playwright"
+fi
 if [ "$(id -u)" -eq 0 ]; then
     "$PLAYWRIGHT_BIN" install-deps chromium || echo "    警告: install-deps 失败，请参考 README 手动安装系统依赖"
 else

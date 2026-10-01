@@ -36,26 +36,34 @@ jobs:
           micromamba create -p "$PWD/pyenv" python=3.11 -c conda-forge -y
           micromamba run -p "$PWD/pyenv" python -V
 
-      - name: 安装项目依赖（自动从 pyproject.toml 读取）
+      - name: 安装 uv（仅构建期使用，打包前卸载）
         run: |
-          micromamba run -p "$PWD/pyenv" python -m pip install -U pip
+          micromamba run -p "$PWD/pyenv" python -m pip install -U uv
+          micromamba run -p "$PWD/pyenv" uv --version
+
+      - name: 解析依赖并导出清单
+        run: |
+          # 仓库不提交 uv.lock，这里现场解析并导出干净的依赖清单（同时会在构建目录生成 uv.lock）
+          micromamba run -p "$PWD/pyenv" uv lock
+          micromamba run -p "$PWD/pyenv" uv export --no-emit-project --no-hashes -o requirements.txt
+          echo "导出依赖条数: $(grep -c '==' requirements.txt)"
+
+      - name: 安装项目依赖到 pyenv
+        run: |
+          micromamba run -p "$PWD/pyenv" uv pip install \
+            --python "$PWD/pyenv/python.exe" \
+            --default-index https://pypi.org/simple/ \
+            -r requirements.txt
+          rm -f requirements.txt
+
       - name: 安装 Playwright Chromium
         env:
           PLAYWRIGHT_BROWSERS_PATH: '0'
         run: |
-          micromamba run -p "$PWD/pyenv" python << 'EOF'
-          import tomllib, subprocess, sys, re
-          with open('pyproject.toml', 'rb') as f:
-            deps = tomllib.load(f)['project']['dependencies']
-            print(f'📦 找到 {len(deps)} 个依赖包')
-            for i, dep in enumerate(deps, 1):
-              clean = re.sub(r'\s*(>=|<=|==|~=|!=|>|<)\s*', r'\1', dep)
-              print(f'[{i}/{len(deps)}] 安装: {clean}')
-              subprocess.check_call([sys.executable, '-m', 'pip', 'install', clean])
-          EOF
           micromamba run -p "$PWD/pyenv" python -m playwright install chromium
       - name: conda-pack 打包环境
         run: |
+          micromamba run -p "$PWD/pyenv" python -m pip uninstall -y uv
           micromamba run -p "$PWD/pyenv" python -m pip install conda-pack
           rm -f pyenv-packed.tar.gz
           micromamba run -p "$PWD/pyenv" conda-pack -p "$PWD/pyenv" -o pyenv-packed.tar.gz
@@ -64,7 +72,7 @@ jobs:
         run: |
           mkdir -p dist/HikariBot-Windows/pyenv
           cp -r hikari_bot hikari_core dist/HikariBot-Windows/
-          cp bot.py start.bat pyproject.toml poetry.lock README.md LICENSE .env.prod-example dist/HikariBot-Windows/ || true
+          cp bot.py start.bat pyproject.toml README.md LICENSE .env.prod-example dist/HikariBot-Windows/ || true
           tar -xzf pyenv-packed.tar.gz -C dist/HikariBot-Windows/pyenv
           rm -rf dist/HikariBot-Windows/hikari_core/.git
           rm -rf dist/HikariBot-Windows/pyenv/.cache dist/HikariBot-Windows/pyenv/pkgs

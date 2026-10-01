@@ -8,7 +8,7 @@
 
 cd "$(dirname "$0")"
 
-# 官方安装器安装的 Poetry 位于 ~/.local/bin
+# uv 官方安装器默认安装到 ~/.local/bin
 export PATH="$HOME/.local/bin:$PATH"
 
 APP="HikariBot"
@@ -28,9 +28,13 @@ start() {
         echo "错误: 缺少 .env.prod，请先执行 ./deploy.sh 或复制 .env.prod-example 并填写配置" >&2
         exit 1
     fi
+    if [ ! -d .venv ]; then
+        echo "错误: 缺少 .venv 虚拟环境，请先执行 ./deploy.sh（或手动运行 uv sync）" >&2
+        exit 1
+    fi
     mkdir -p logs
     echo "启动 $APP ..."
-    nohup poetry run nb run >> "$LOG_FILE" 2>&1 &
+    nohup uv run --no-sync nb run >> "$LOG_FILE" 2>&1 &
     echo $! > "$PID_FILE"
     sleep 2
     if is_running; then

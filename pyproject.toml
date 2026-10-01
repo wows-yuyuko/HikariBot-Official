@@ -32,22 +32,23 @@ repository = "https://github.com/benx1n/HikariBot-Official"
 [tool.nonebot]
 plugin_dirs = ["hikari_bot/plugins"]
 
-[[tool.poetry.source]]
+# 依赖源（阿里云为主源，清华/腾讯为回退源）
+[[tool.uv.index]]
 name = "aliyun"
 url = "https://mirrors.aliyun.com/pypi/simple/"
-priority = "primary"
-[[tool.poetry.source]]
+default = true
+
+[[tool.uv.index]]
 name = "tsinghua"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple/"
-priority = "supplemental"
-[[tool.poetry.source]]
+
+[[tool.uv.index]]
 name = "tencent"
 url = "https://mirrors.cloud.tencent.com/pypi/simple/"
-priority = "supplemental"
 
-[build-system]
-requires = ["poetry-core>=2.4.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+# 本项目是应用而非待分发的库：uv sync 只安装依赖，不构建/安装本项目自身
+package = false
 
 # 以下工具配置保持不变
 [tool.isort]
