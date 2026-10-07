@@ -40,8 +40,8 @@ from hikari_bot.plugins.hikari_bot_qq_official.adapters import (
 _config = get_driver().config
 
 # ============ 配置 ============
-RENDER_URL = str(getattr(_config, 'replay_render_url', '') or '').rstrip('/')  # 渲染服务地址，空则本插件不工作
-RENDER_TOKEN = str(getattr(_config, 'replay_render_token', '') or '')  # 渲染服务 Bearer Token
+RENDER_URL = ''.rstrip('/')  # 渲染服务地址，空则本插件不工作
+RENDER_TOKEN = ''  # 渲染服务 Bearer Token
 ENABLED = bool(RENDER_URL) and get_adapter_name() == 'qq_official'
 if RENDER_URL and not ENABLED:
     logger.warning('回放渲染插件只支持 BOT_ADAPTER=qq_official，当前适配器下不工作')
