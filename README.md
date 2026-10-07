@@ -56,7 +56,7 @@ wws推送 <内容>
 
 ## 文件消息处理
 
-机器人对文件处理使用外部插件的方式 模板在根目录的template里面的file_handler.py 改好后复制到hikari_bot.plugins.hikari_bot_qq_official.bot.file_listener文件夹下面 里面有个file.py文件放一起就行了 然后启动机器人 在控制台看见
+机器人对文件处理使用外部插件的方式 模板在根目录的template里面的file_handler.py 改好后复制到 bot_file_listener 文件夹下面 然后启动机器人 在控制台看见
 
 插件加载是扫描``file_handler-``开头的文件
 
