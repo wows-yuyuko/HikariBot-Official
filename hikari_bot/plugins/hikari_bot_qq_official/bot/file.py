@@ -1,4 +1,5 @@
 import importlib.util
+import inspect
 import traceback
 from pathlib import Path
 from typing import Optional, Any, Callable
@@ -15,8 +16,18 @@ plugin_config = get_plugin_config(Config)
 driver = get_driver()
 
 # ============ 配置 ============
-SCRIPT_FILE_NAME = "file_handler-*"  # 同级目录脚本文件名
+SCRIPT_FILE_NAME = "file_handler-*"  # 目录内脚本文件名
 FUNCTION_NAME = "process_file"  # 处理函数名
+LISTEN_DIR_NAME = "bot_file_listener"  # 外部脚本目录名（位于项目根目录下）
+
+
+def listen_dir() -> Path:
+    """外部脚本目录：项目根目录下的 bot_file_listener/（随包升级不会被覆盖）"""
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "pyproject.toml").is_file():
+            return parent / LISTEN_DIR_NAME
+    # 打包/异常场景下退回当前工作目录
+    return Path.cwd() / LISTEN_DIR_NAME
 
 
 # ============ 脚本加载器 ============
@@ -34,12 +45,19 @@ class ScriptLoader:
 
     def _load_all_scripts(self) -> bool:
         """加载所有匹配的脚本文件（仅启动时执行一次）"""
-        # 查找所有匹配的脚本文件
-        pattern = self.file_pattern.replace("*", "*")  # 保持通配符
-        script_files = list(self.script_dir.glob(pattern))
+        # 目录不存在则按需创建，方便用户直接把脚本丢进去
+        if not self.script_dir.exists():
+            try:
+                self.script_dir.mkdir(parents=True, exist_ok=True)
+                logger.info(f"📁 已创建脚本目录: {self.script_dir}")
+            except OSError as e:
+                logger.error(f"❌ 无法创建脚本目录 {self.script_dir}: {e}")
+
+        # 查找所有匹配的脚本文件（排序保证加载顺序稳定）
+        script_files = sorted(self.script_dir.glob(self.file_pattern))
 
         if not script_files:
-            logger.info(f"ℹ️ 未找到匹配的file_handler脚本: {self.file_pattern}，使用默认处理逻辑")
+            logger.info(f"ℹ️ 未找到匹配的file_handler脚本: {self.script_dir}/{self.file_pattern}，使用默认处理逻辑")
             self.handler_funcs = []
             return False
 
@@ -85,7 +103,6 @@ class ScriptLoader:
         results = []
         for handler_func in self.handler_funcs:
             try:
-                import inspect
                 if inspect.iscoroutinefunction(handler_func):
                     result = await handler_func(*args, **kwargs)
                 else:
@@ -111,13 +128,11 @@ async def init_script_loader():
     """启动时初始化脚本加载器（加载所有匹配的脚本）"""
     global script_loader
 
-    # 获取插件所在目录
-    plugin_dir = Path(__file__).parent
-    # 直接传入目录和文件名模式
-    script_pattern = SCRIPT_FILE_NAME  # 例如 "file_handler-*"
+    # 固定扫描项目根目录下的 bot_file_listener/
+    script_dir = listen_dir()
 
-    logger.info(f"🔍 检查外部脚本: {plugin_dir}/{script_pattern}")
-    script_loader = ScriptLoader(plugin_dir, script_pattern, FUNCTION_NAME)
+    logger.info(f"🔍 检查外部脚本目录: {script_dir}/{SCRIPT_FILE_NAME}")
+    script_loader = ScriptLoader(script_dir, SCRIPT_FILE_NAME, FUNCTION_NAME)
 
 
 # ============ 消息处理器 ============

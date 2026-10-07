@@ -25,5 +25,5 @@ config = get_plugin_config(Config)
 from . import start  # noqa: F401
 # 机器人消息处理（wws 指令业务）
 from hikari_bot.plugins.hikari_bot_qq_official.bot.bot import main, wws
-from hikari_bot.plugins.hikari_bot_qq_official.bot.file_listener.file import file_listen
+from hikari_bot.plugins.hikari_bot_qq_official.bot.file import file_listen
 from hikari_bot.plugins.hikari_bot_qq_official.select_state import bot_listen

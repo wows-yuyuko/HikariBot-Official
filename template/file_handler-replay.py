@@ -1,7 +1,7 @@
 """回放渲染插件：收到 .wowsreplay 后调外部渲染服务生成小地图 MP4 并发回
 
-复制到 hikari_bot/plugins/hikari_bot_qq_official/bot/file_listener/ 下面（和 file.py 放一起），
-文件名保持 file_handler- 前缀，再在 .env.prod 里设置 BOT_ENABLE_FILE_LISTEN=true。
+复制到项目根目录的 bot_file_listener/ 下面，文件名保持 file_handler- 前缀，
+再在 .env.prod 里设置 BOT_ENABLE_FILE_LISTEN=true。
 另外必须配 REPLAY_RENDER_URL / REPLAY_RENDER_TOKEN 指向渲染服务，不配则本插件直接跳过。
 只支持 BOT_ADAPTER=qq_official：发视频靠 QQ 官方的富媒体字节直传，OneBot 下本插件不工作。
 
