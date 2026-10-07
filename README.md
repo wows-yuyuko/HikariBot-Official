@@ -70,19 +70,6 @@ wws推送 <内容>
 
 实现你自己的相关处理逻辑就行了
 
-### 完整示例
-
-``template``文件夹里的``file_handler-example.py``是一个可以直接跑的完整示例 流程是 接收 -> 校验 -> 下载 -> 落盘去重 -> 回执
-
-复制到``file_listener``文件夹下面就能用 业务逻辑写在里面的``on_file_saved``函数里 文件顶部有配置区(落盘目录/扩展名白名单/大小上限/条数上限/超时)
-
-需要注意
-
-- 要在``.env.prod``里设置``BOT_ENABLE_FILE_LISTEN=true``才会监听文件消息
-- QQ官方适配器只把附件的``url``放进file段 不带文件名/大小/content-type 而 url 形如``/download?fileid=...`` 路径里没有文件名 所以示例按 url 到事件的``attachments``里找回原始文件名 找不到才退回 url 路径
-- 频道消息的附件会被适配器统一解析成image段 不会触发file监听 目前只有QQ群和单聊(C2C)的文件能走到这里
-- QQ官方对被动消息的回复次数有限制 所以示例把多个文件的结果合成一条消息发出去
-
 ### 回放小地图渲染
 
 ``template``文件夹里的``file_handler-replay.py``是一个实装:用户发``.wowsreplay``回放 机器人回一段小地图 MP4
